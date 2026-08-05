@@ -5,6 +5,19 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed (2026-08-05, post-Phase 1)
+- **RLS infinite recursion on `user_roles`** (Postgres error `42P17`,
+  confirmed live against the linked Supabase project): the
+  `user_roles_select_self_or_staff` and `user_roles_write_superadmin_only`
+  policies checked staff status via a subquery against `user_roles` from
+  within a policy defined on `user_roles`, which re-triggered itself
+  indefinitely. Fixed in
+  `supabase/migrations/0002_fix_user_roles_rls_recursion.sql` by moving the
+  check into `SECURITY DEFINER` helper functions (`public.is_staff`,
+  `public.is_superadmin`) that bypass RLS for their own internal lookup.
+  Documented the pattern in `docs/permissions.md` §4b for future migrations
+  to follow.
+
 ### Phase 1 — Project Foundation (2026-08-05)
 
 #### Added

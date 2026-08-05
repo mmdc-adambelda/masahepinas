@@ -110,6 +110,20 @@ row level — enforced via dedicated public views rather than raw table grants.
 generated server-side after confirming caller is the owning `spa_owner`, a
 `moderator`, or a `superadmin`. No public bucket policy.
 
+## 4b. Implementation Note: Avoiding RLS Recursion on `user_roles`
+
+Any policy that needs to answer "is this caller a moderator/superadmin?"
+must **not** do it with a subquery directly against `user_roles` inside a
+policy defined on `user_roles` itself (or any policy that indirectly gets
+evaluated as part of a `user_roles` query) — Postgres re-triggers that same
+policy for the subquery's own read, causing infinite recursion
+(error `42P17`). Instead, use the `SECURITY DEFINER` helper functions
+`public.is_staff(uid)` / `public.is_superadmin(uid)` introduced in
+`supabase/migrations/0002_fix_user_roles_rls_recursion.sql` — being
+`SECURITY DEFINER`, their internal query bypasses RLS instead of
+re-entering it. Every future "staff can do X" policy (Phase 2+) should call
+these helpers rather than inlining the subquery.
+
 ## 5. Enforcement Layers
 
 1. **Database RLS** — baseline, cannot be bypassed by any client key.
