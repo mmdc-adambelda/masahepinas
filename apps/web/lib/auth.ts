@@ -1,4 +1,6 @@
+import { redirect } from 'next/navigation';
 import type { AppRole, AuthSession, Profile } from '@masahepinas/types';
+import { hasRole, isStaff } from '@masahepinas/types';
 import { createSupabaseServerClient } from './supabase/server';
 
 /**
@@ -42,4 +44,36 @@ export async function getServerAuthSession(): Promise<AuthSession | null> {
     profile,
     roles,
   };
+}
+
+/**
+ * Server Component / Server Action guard: redirects unauthenticated users
+ * to sign-in, and users lacking `role` to the homepage. Never rely on this
+ * alone for data access — RLS is still the real boundary (see
+ * docs/permissions.md); this only controls page-level UX.
+ */
+export async function requireRole(role: AppRole): Promise<AuthSession> {
+  const session = await getServerAuthSession();
+  if (!session) redirect(`/sign-in?next=${encodeURIComponent('/')}`);
+  if (!hasRole(session, role) && !isStaff(session)) redirect('/');
+  return session;
+}
+
+export async function requireAuth(): Promise<AuthSession> {
+  const session = await getServerAuthSession();
+  if (!session) redirect('/sign-in');
+  return session;
+}
+
+/**
+ * Strict superadmin-only guard — unlike `requireRole`, moderators do NOT
+ * pass this check. Use for capabilities the permission matrix reserves for
+ * superadmin alone (e.g. manually creating a listing) — see
+ * docs/permissions.md §2.
+ */
+export async function requireSuperadmin(): Promise<AuthSession> {
+  const session = await getServerAuthSession();
+  if (!session) redirect(`/sign-in?next=${encodeURIComponent('/')}`);
+  if (!hasRole(session, 'superadmin')) redirect('/');
+  return session;
 }

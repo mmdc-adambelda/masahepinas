@@ -7,11 +7,13 @@ shipped as a shared-backend web app + mobile app.
 
 ## Project Status
 
-**Phase 1 — Project Foundation (complete).** The monorepo, shared packages,
-web app, mobile app, and Supabase auth foundations are scaffolded and
-verified (typecheck, lint, unit tests, and a production `next build` all
-pass). See [docs/development-roadmap.md](./docs/development-roadmap.md) for
-the full phase plan; Phase 2 (Spa Directory & Location Discovery) is next.
+**Phase 2 — Spa Directory & Location Discovery (complete).** Customers can
+browse/search/filter listings and view them on a map; spa owners can
+register and submit a full listing (location pin, hours, services, photos);
+superadmins can manually add unclaimed listings. See
+[docs/development-roadmap.md](./docs/development-roadmap.md) for the full
+phase plan and current known limitations; Phase 3 (Reviews & Owner
+Responses) is next.
 
 ## Planning Documents
 
@@ -80,11 +82,16 @@ npm install
 
 3. **Database**
    - `supabase login` / `supabase link` to your project, then
-     `supabase db push` to apply `supabase/migrations/0001_init_profiles_and_roles.sql`
-     (creates `profiles`, `user_roles`, RLS policies, and the
-     `handle_new_user` signup trigger).
+     `supabase db push` to apply every file under `supabase/migrations/` in
+     order (0001: profiles/roles/RLS; 0002: RLS recursion fix; 0003: spa
+     directory schema/RLS/storage; 0004: spa-owner signup trigger; 0005:
+     search RPC). Without CLI access, paste each file into the Supabase SQL
+     Editor in filename order instead.
    - Bootstrap your first superadmin locally by signing up a normal account
      through the app, then running the SQL noted in `supabase/seed.sql`.
+   - Optionally run `supabase/seed.sql`'s fictional spa listings (clearly
+     labelled as fictional) to have search/filter/map results to test
+     against locally.
 
 ### Workspace-wide commands
 

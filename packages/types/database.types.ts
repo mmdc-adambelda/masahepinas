@@ -14,7 +14,13 @@
  * query results to `never`.
  */
 
-import type { AccountStatus, AppRole } from './enums';
+import type {
+  AccountStatus,
+  AppRole,
+  GenderAvailability,
+  ListingStatus,
+  PriceRange,
+} from './enums';
 
 export interface Database {
   // Required by newer @supabase/ssr and @supabase/supabase-js versions to
@@ -76,12 +82,282 @@ export interface Database {
           },
         ];
       };
+      service_categories: {
+        Row: {
+          id: string;
+          slug: string;
+          name: string;
+          description: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          name: string;
+          description?: string | null;
+          is_active?: boolean;
+        };
+        Update: Partial<Database['public']['Tables']['service_categories']['Insert']>;
+        Relationships: [];
+      };
+      spa_businesses: {
+        Row: {
+          id: string;
+          slug: string;
+          owner_id: string | null;
+          business_name: string;
+          description: string | null;
+          logo_image_id: string | null;
+          status: ListingStatus;
+          is_premium: boolean;
+          is_recommended: boolean;
+          recommended_by: string | null;
+          recommended_at: string | null;
+          contact_number: string | null;
+          booking_contact_number: string | null;
+          website_url: string | null;
+          social_media_url: string | null;
+          price_range: PriceRange | null;
+          gender_availability: GenderAvailability;
+          average_rating: number;
+          review_count: number;
+          verified_review_count: number;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          owner_id?: string | null;
+          business_name: string;
+          description?: string | null;
+          contact_number?: string | null;
+          booking_contact_number?: string | null;
+          website_url?: string | null;
+          social_media_url?: string | null;
+          price_range?: PriceRange | null;
+          gender_availability?: GenderAvailability;
+          status?: ListingStatus;
+        };
+        Update: Partial<Database['public']['Tables']['spa_businesses']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'spa_businesses_owner_id_fkey';
+            columns: ['owner_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      business_locations: {
+        Row: {
+          id: string;
+          business_id: string;
+          address_line: string;
+          barangay: string | null;
+          city_municipality: string;
+          province: string;
+          region: string;
+          postal_code: string | null;
+          latitude: number;
+          longitude: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          address_line: string;
+          barangay?: string | null;
+          city_municipality: string;
+          province: string;
+          region: string;
+          postal_code?: string | null;
+          latitude: number;
+          longitude: number;
+        };
+        Update: Partial<Database['public']['Tables']['business_locations']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'business_locations_business_id_fkey';
+            columns: ['business_id'];
+            isOneToOne: true;
+            referencedRelation: 'spa_businesses';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      business_hours: {
+        Row: {
+          id: string;
+          business_id: string;
+          day_of_week: number;
+          open_time: string | null;
+          close_time: string | null;
+          is_closed: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          day_of_week: number;
+          open_time?: string | null;
+          close_time?: string | null;
+          is_closed?: boolean;
+        };
+        Update: Partial<Database['public']['Tables']['business_hours']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'business_hours_business_id_fkey';
+            columns: ['business_id'];
+            isOneToOne: false;
+            referencedRelation: 'spa_businesses';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      business_services: {
+        Row: {
+          id: string;
+          business_id: string;
+          service_category_id: string;
+          is_featured: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          service_category_id: string;
+          is_featured?: boolean;
+        };
+        Update: Partial<Database['public']['Tables']['business_services']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'business_services_business_id_fkey';
+            columns: ['business_id'];
+            isOneToOne: false;
+            referencedRelation: 'spa_businesses';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'business_services_service_category_id_fkey';
+            columns: ['service_category_id'];
+            isOneToOne: false;
+            referencedRelation: 'service_categories';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      business_images: {
+        Row: {
+          id: string;
+          business_id: string;
+          storage_path: string;
+          caption: string | null;
+          alt_text: string | null;
+          is_primary: boolean;
+          position: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          storage_path: string;
+          caption?: string | null;
+          alt_text?: string | null;
+          is_primary?: boolean;
+          position?: number;
+        };
+        Update: Partial<Database['public']['Tables']['business_images']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'business_images_business_id_fkey';
+            columns: ['business_id'];
+            isOneToOne: false;
+            referencedRelation: 'spa_businesses';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      saved_businesses: {
+        Row: {
+          id: string;
+          user_id: string;
+          business_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          business_id: string;
+        };
+        Update: Partial<Database['public']['Tables']['saved_businesses']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'saved_businesses_business_id_fkey';
+            columns: ['business_id'];
+            isOneToOne: false;
+            referencedRelation: 'spa_businesses';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      search_spa_businesses: {
+        Args: {
+          search_query?: string | null;
+          filter_region?: string | null;
+          filter_province?: string | null;
+          filter_city?: string | null;
+          filter_service_slug?: string | null;
+          filter_gender?: GenderAvailability | null;
+          filter_price?: PriceRange | null;
+          filter_verified_only?: boolean;
+          filter_premium_only?: boolean;
+          filter_recommended_only?: boolean;
+          filter_min_rating?: number | null;
+          user_lat?: number | null;
+          user_lng?: number | null;
+          radius_km?: number | null;
+          sort_by?: string;
+          page_number?: number;
+          page_size?: number;
+        };
+        Returns: {
+          id: string;
+          slug: string;
+          business_name: string;
+          description: string | null;
+          status: ListingStatus;
+          is_premium: boolean;
+          is_recommended: boolean;
+          gender_availability: GenderAvailability;
+          price_range: PriceRange | null;
+          average_rating: number;
+          review_count: number;
+          city_municipality: string;
+          province: string;
+          region: string;
+          latitude: number;
+          longitude: number;
+          primary_image_path: string | null;
+          distance_km: number | null;
+          total_count: number;
+        }[];
+      };
+    };
     Enums: {
       app_role: AppRole;
       account_status: AccountStatus;
+      listing_status: ListingStatus;
+      gender_availability: GenderAvailability;
+      price_range: PriceRange;
     };
     CompositeTypes: Record<string, never>;
   };

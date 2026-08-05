@@ -1,7 +1,11 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { customerSignUpSchema, signInSchema } from '@masahepinas/validation';
+import {
+  customerSignUpSchema,
+  signInSchema,
+  spaOwnerSignUpSchema,
+} from '@masahepinas/validation';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { logger } from '@masahepinas/utils';
 
@@ -56,6 +60,56 @@ export async function signUpCustomer(
 
   if (error) {
     logger.warn('Customer sign-up failed', { code: error.status ?? null });
+    return { error: error.message };
+  }
+
+  redirect('/sign-up/check-email');
+}
+
+/**
+ * Spa owner registration. Creates the auth account plus (via the
+ * `handle_new_user` DB trigger — see
+ * supabase/migrations/0004_spa_owner_signup.sql) the `spa_owner` role and a
+ * draft `spa_businesses` row in `pending_review` status. The owner
+ * completes location/hours/services/photos afterwards on `/submit-a-spa`
+ * once signed in — that page requires a real session so image uploads can
+ * be authorized by RLS (`owns_business`), which isn't possible before
+ * email confirmation.
+ */
+export async function signUpSpaOwner(
+  _prevState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const parsed = spaOwnerSignUpSchema.safeParse({
+    fullName: formData.get('fullName'),
+    email: formData.get('email'),
+    contactNumber: formData.get('contactNumber'),
+    password: formData.get('password'),
+    businessName: formData.get('businessName'),
+    acceptedListingPolicies: formData.get('acceptedListingPolicies') === 'on',
+    confirmedLegitimateService: formData.get('confirmedLegitimateService') === 'on',
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid form submission' };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.signUp({
+    email: parsed.data.email,
+    password: parsed.data.password,
+    options: {
+      data: {
+        display_name: parsed.data.fullName,
+        intended_role: 'spa_owner',
+        business_name: parsed.data.businessName,
+        business_contact_number: parsed.data.contactNumber,
+      },
+    },
+  });
+
+  if (error) {
+    logger.warn('Spa owner sign-up failed', { code: error.status ?? null });
     return { error: error.message };
   }
 

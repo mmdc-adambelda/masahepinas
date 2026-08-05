@@ -41,16 +41,40 @@ Supabase project (URL + anon key + service role key), applying the Phase 1
 migration via `supabase db push`, and populating `.env.local`/`.env` in
 `apps/web`/`apps/mobile` per the README.
 
-## Phase 2 — Spa Directory & Location Discovery
+## Phase 2 — Spa Directory & Location Discovery — ✅ Complete (2026-08-05)
 
 Business/location/hours/services/images schema + RLS, owner submission form
 (with map pin picker via the MapProvider abstraction), superadmin manual
 listing creation, public listing pages, search + filters, list/map views,
 saved businesses.
-**Acceptance:** customer can browse, owner can submit, superadmin can add
-manually, coordinates persist correctly, 3-image/5MB limits enforced
-client+server, location/gender filters work, listing pages are shareable
-URLs.
+**Acceptance:** customer can browse listings (`/`, `/search`, `/map`,
+`/spas/[province]/[city]`, `/services/[service]`), an owner can submit a
+listing (`/sign-up/spa-owner` → `/submit-a-spa`), a superadmin can add a
+listing (`/admin/spas/new`), map coordinates are saved correctly (PostGIS
+`geom` generated column + lat/lng columns), 3-image/5MB limits enforced
+both client-side and server-side (server sniffs actual file bytes, not just
+the declared MIME type), location/gender/price/verified/recommended filters
+work via a server-side `search_spa_businesses` RPC, listing pages are
+shareable URLs with LocalBusiness JSON-LD (AggregateRating omitted until
+real reviews exist in Phase 3). Verified: typecheck/lint/test/`next build`
+all pass; `next build` succeeds against the live linked Supabase project.
+**Deferred to later phases (tracked, not dropped):**
+
+- Native interactive map on mobile (MapLibre React Native needs a custom
+  native module — doesn't run in Expo Go, needs an EAS dev-client build).
+  Mobile's Map tab currently shows a location-sorted list instead; web has
+  the full interactive MapLibre GL map.
+- Full homepage sections from docs/product-requirements.md §27 (premium
+  carousel, recommended carousel, explore-by-location/service grids,
+  recent reviews, community contributors) — homepage currently has a
+  working hero search + a "Highly rated" section; the rest depends on
+  Premium (Phase 6) and Recommendation (Phase 7) data existing.
+- A controlled Philippine locations table (province/city are free text on
+  `business_locations` for now, matched case-insensitively for directory
+  URLs) — Phase 7's "Manage Philippine locations" superadmin feature.
+- Business claim workflow for superadmin-created listings — Phase 5.
+- `spa_owners` table (verification documents, business permit info) —
+  Phase 5 "Spa Owner Portal".
 
 ## Phase 3 — Reviews & Owner Responses
 
