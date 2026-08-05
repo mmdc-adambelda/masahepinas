@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Masahe Pinas",
+    "slug": "masahe-pinas",
+    "scheme": "masahepinas",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#07110C",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "backgroundColor": "#07110C"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.masahepinas.app"
+    },
+    "android": {
+      "package": "com.masahepinas.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#07110C"
+      }
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

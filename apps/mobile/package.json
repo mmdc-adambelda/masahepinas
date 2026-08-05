@@ -1,0 +1,49 @@
+{
+  "name": "@masahepinas/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "dev": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "build": "echo 'Native builds run via EAS (eas build) — see docs/development-roadmap.md Phase 8'",
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "test": "jest --passWithNoTests",
+    "clean": "rm -rf .expo dist node_modules"
+  },
+  "dependencies": {
+    "expo": "~52.0.0",
+    "expo-router": "~4.0.0",
+    "expo-status-bar": "~2.0.0",
+    "expo-secure-store": "~14.0.0",
+    "expo-constants": "~17.0.0",
+    "expo-linking": "~7.0.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-native": "0.76.5",
+    "react-native-safe-area-context": "4.12.0",
+    "react-native-screens": "~4.4.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "react-native-url-polyfill": "^2.0.0",
+    "zod": "^3.23.0",
+    "@masahepinas/config": "*",
+    "@masahepinas/types": "*",
+    "@masahepinas/validation": "*",
+    "@masahepinas/utils": "*",
+    "@masahepinas/database": "*",
+    "@masahepinas/ui": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@babel/core": "^7.25.0",
+    "babel-preset-expo": "~12.0.0",
+    "@types/react": "~18.3.0",
+    "eslint": "^8.57.0",
+    "eslint-config-expo": "~8.0.0",
+    "eslint-import-resolver-typescript": "^3.6.0",
+    "jest": "^29.7.0",
+    "jest-expo": "~52.0.0"
+  }
+}

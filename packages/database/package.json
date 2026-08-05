@@ -1,0 +1,17 @@
+{
+  "name": "@masahepinas/database",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "@masahepinas/types": "*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

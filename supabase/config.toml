@@ -1,0 +1,36 @@
+# Supabase local development config. Run `supabase init` once to generate
+# the full default file if this minimal version needs project_id fields
+# populated for CLI features beyond migrations/local dev.
+# See: https://supabase.com/docs/guides/local-development
+
+project_id = "masahe-pinas"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+
+[storage]
+enabled = true
+file_size_limit = "5MiB"

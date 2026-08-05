@@ -1,0 +1,14 @@
+-- Local development seed data.
+-- Intentionally empty in Phase 1 — there are no listings/reviews/service
+-- categories yet (Phase 2+). Auth users cannot be safely created here
+-- (password hashing goes through Supabase Auth, not raw SQL); instead:
+--
+--   1. Sign up a normal account through the app (creates a `customer` row
+--      via the handle_new_user trigger).
+--   2. Promote it to superadmin locally with:
+--        insert into public.user_roles (user_id, role)
+--        values ('<the user's auth.users id>', 'superadmin');
+--
+-- Phase 2+ seed data (fictional Philippine spas/reviewers) will be added
+-- here once the relevant tables exist, and clearly labelled as fictional
+-- development data per docs/development-roadmap.md.
