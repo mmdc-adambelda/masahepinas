@@ -155,15 +155,51 @@ screen with follow is reachable from any review author's name.
   Community tab is still a placeholder — profile/follow works via the
   Profile tab and per-review author links instead.
 
-## Phase 5 — Spa Owner Portal
+## Phase 5 — Spa Owner Portal + Superadmin Admin Dashboard — ✅ Complete (2026-08-06)
 
 Dashboard overview (status, ratings, recent reviews, profile
 views/clicks/directions events), business management UI, review management
 UI (no delete), owner analytics backed by real stored events, verification
-application flow, business claim flow, listing-change approval routing.
-**Acceptance:** owners manage only their own listing (RLS-enforced), claims
-require review, analytics reflect real events not placeholders,
-verification documents stay private.
+application flow, business claim flow. **Scope expanded on request** to
+also deliver a real in-app superadmin/moderator admin dashboard covering
+user management, listing verification (business registration acceptance),
+and business claim review — originally scoped for Phase 7, pulled forward
+because it's the natural companion to the owner-side claim/verification
+flow built in this phase.
+**Acceptance:** owners manage only their own listing (RLS-enforced —
+verified live), claims require review (`business_claims` has no
+client-facing update policy; resolution only happens through the
+`approve_business_claim`/`reject_business_claim` `SECURITY DEFINER` RPCs),
+analytics reflect real stored events (`analytics_events`, populated by a
+server-side listing-view record and client-side tracked Call/Directions
+links — not placeholders), verification documents stay private (dedicated
+`verification-documents` storage bucket, owner-or-staff-only policies).
+**Delivered:**
+
+- `/owner/dashboard` — status, average rating, review count, saved count,
+  response rate, profile views/contact clicks/direction requests.
+- Business claiming: a "Claim this business" banner on any unclaimed
+  listing page, submitting to `business_claims`.
+- Verification details (owner full name/contact, business permit and
+  government registration references, one private supporting document)
+  addable from `/submit-a-spa`.
+- `/admin` (platform stats + navigation), `/admin/listings` (verification
+  queue — approve/reject/suspend/archive with a logged reason),
+  `/admin/claims` (approve/reject via the RPCs above), `/admin/users`
+  (search, suspend/reinstate — moderator; grant/revoke the moderator role
+  — superadmin-only, logged to a new platform-wide `audit_logs` table
+  distinct from `moderation_actions`).
+  **Deferred to later phases (tracked, not dropped):**
+- Listing-change approval routing (re-review on edits to an already-
+  verified listing, per docs/moderation-policy.md §5) is not implemented —
+  edits currently publish immediately, same as Phase 2. This is a
+  deliberate trim to fit the expanded admin-dashboard scope; revisit in
+  Phase 7/8.
+- `/admin/users` searches by display name only — email-based lookup would
+  need the Supabase service-role admin API, and `SUPABASE_SERVICE_ROLE_KEY`
+  isn't configured in this environment (still blank in `.env.local`).
+- No mobile owner dashboard or admin surface — consistent with Phase 3/4,
+  owner/moderator/superadmin tooling stays web-only for this MVP.
 
 ## Phase 6 — Premium Subscription
 

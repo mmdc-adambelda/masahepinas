@@ -5,6 +5,67 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Phase 5 — Spa Owner Portal + Superadmin Admin Dashboard (2026-08-06)
+
+Scope expanded on request to pull the superadmin admin dashboard forward
+from Phase 7 (user management, listing verification, business claims).
+
+#### Added
+
+- `supabase/migrations/0008_owner_portal_admin.sql`: `analytics_events`,
+  `spa_owners`, `business_claims`, `audit_logs`; `approve_business_claim`/
+  `reject_business_claim` `SECURITY DEFINER` RPCs (atomically reassign
+  ownership, grant the `spa_owner` role, resolve the claim, and log it —
+  callable by a moderator even though granting roles is normally
+  superadmin-only, because authorization is checked inside the trusted
+  function rather than relying on the caller's raw table privileges); a
+  private `verification-documents` storage bucket.
+- `packages/types/owner.ts`, `packages/validation/owner.ts`.
+- **Web — owner side**: `/owner/dashboard` (status, rating, saved count,
+  response rate, profile views/contact clicks/direction requests from real
+  `analytics_events`); a "Claim this business" banner on unclaimed
+  listings; a verification-details section (permit/registration
+  references + private document upload) on `/submit-a-spa`; `TrackedLink`
+  component for Call/Directions click tracking.
+- **Web — admin side**: `/admin` (platform stats + nav), `/admin/listings`
+  (verification queue: approve/reject/suspend/archive, logged reason
+  required), `/admin/claims` (approve/reject via the RPCs above),
+  `/admin/users` (search, suspend/reinstate accounts — moderator; grant/
+  revoke the moderator role — superadmin-only).
+- A role-aware `SiteHeader`: owners see "Owner dashboard", staff see
+  "Admin".
+
+#### Fixed
+
+- Root `package.json` now also pins `@types/react`/`@types/react-dom` to
+  ^19 (same reasoning as the Phase 1 `react`/`react-dom` pin — a stray
+  hoisted `@types/react@18` was causing spurious `ReactNode`/`children`
+  type mismatches). Added `.npmrc` with `legacy-peer-deps=true` so
+  `npm install` doesn't fail on the resulting (expected, intentional)
+  react-native/react peer conflict.
+
+#### Security
+
+- `business_claims` has no client-facing update policy at all — the only
+  way a claim is ever resolved is the two `SECURITY DEFINER` RPCs, which
+  check `is_staff(auth.uid())` internally.
+- Role grants/revocations are logged to a new platform-wide `audit_logs`
+  table (superadmin-only read/write), kept distinct from
+  `moderation_actions` (moderator-accessible, content-moderation-focused)
+  per the original docs/database-schema.md design.
+- Verification documents live in a private bucket with owner-or-staff-only
+  storage policies — never publicly readable.
+
+#### Known Limitations / Deferred
+
+- Listing-change approval routing (re-review on edits to a verified
+  listing) is not implemented — edits still publish immediately.
+- `/admin/users` search is display-name-only; email lookup needs the
+  Supabase service-role admin API (`SUPABASE_SERVICE_ROLE_KEY` isn't
+  configured).
+- No mobile owner dashboard or admin surface (web-only, consistent with
+  Phase 3/4).
+
 ### Phase 4 — Customer Community & Credibility (2026-08-06)
 
 #### Added

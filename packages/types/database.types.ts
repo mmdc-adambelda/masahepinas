@@ -17,6 +17,7 @@
 import type {
   AccountStatus,
   AppRole,
+  ClaimStatus,
   GenderAvailability,
   ListingStatus,
   ModerationActionType,
@@ -587,9 +588,117 @@ export interface Database {
         >;
         Relationships: [];
       };
+      analytics_events: {
+        Row: {
+          id: string;
+          event_type: string;
+          business_id: string | null;
+          user_id: string | null;
+          metadata: unknown;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_type: string;
+          business_id?: string | null;
+          user_id?: string | null;
+          metadata?: unknown;
+        };
+        Update: Partial<Database['public']['Tables']['analytics_events']['Insert']>;
+        Relationships: [];
+      };
+      spa_owners: {
+        Row: {
+          id: string;
+          user_id: string;
+          full_name: string | null;
+          contact_number: string | null;
+          business_permit_reference: string | null;
+          government_registration_reference: string | null;
+          verification_document_path: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          full_name?: string | null;
+          contact_number?: string | null;
+          business_permit_reference?: string | null;
+          government_registration_reference?: string | null;
+          verification_document_path?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['spa_owners']['Insert']>;
+        Relationships: [];
+      };
+      business_claims: {
+        Row: {
+          id: string;
+          business_id: string;
+          claimant_user_id: string;
+          status: ClaimStatus;
+          supporting_document_path: string | null;
+          notes: string | null;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          claimant_user_id: string;
+          status?: ClaimStatus;
+          supporting_document_path?: string | null;
+          notes?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['business_claims']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'business_claims_business_id_fkey';
+            columns: ['business_id'];
+            isOneToOne: false;
+            referencedRelation: 'spa_businesses';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      audit_logs: {
+        Row: {
+          id: string;
+          actor_id: string | null;
+          action: string;
+          entity_type: string;
+          entity_id: string | null;
+          previous_state: unknown;
+          new_state: unknown;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          actor_id?: string | null;
+          action: string;
+          entity_type: string;
+          entity_id?: string | null;
+          previous_state?: unknown;
+          new_state?: unknown;
+        };
+        Update: Partial<Database['public']['Tables']['audit_logs']['Insert']>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
+      approve_business_claim: {
+        Args: { claim_id: string; reason: string };
+        Returns: undefined;
+      };
+      reject_business_claim: {
+        Args: { claim_id: string; reason: string };
+        Returns: undefined;
+      };
       search_spa_businesses: {
         Args: {
           search_query?: string | null;
@@ -644,6 +753,7 @@ export interface Database {
       report_target_type: ReportTargetType;
       report_reason: ReportReason;
       moderation_action_type: ModerationActionType;
+      claim_status: ClaimStatus;
     };
     CompositeTypes: Record<string, never>;
   };

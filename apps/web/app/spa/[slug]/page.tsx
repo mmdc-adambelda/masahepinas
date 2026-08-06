@@ -13,6 +13,9 @@ import {
 } from '@/lib/reviews';
 import { ListingMap } from '@/components/ListingMap';
 import { ReportButton } from '@/components/ReportButton';
+import { TrackedLink } from '@/components/TrackedLink';
+import { recordEvent } from '@/lib/analytics';
+import { ClaimBanner } from './claim-banner';
 import { SavedToggle } from './saved-toggle';
 import { ReviewForm } from './review-form';
 import { ReviewList } from './review-list';
@@ -53,6 +56,9 @@ export default async function SpaListingPage({ params }: PageProps) {
   const session = await getServerAuthSession();
   const saved = session ? await isBusinessSaved(session.userId, listing.id) : false;
   const isOwner = session?.userId === listing.ownerId;
+
+  // Best-effort, never blocks rendering — see docs/product-requirements.md §26.
+  void recordEvent('listing_view', listing.id, session?.userId ?? null);
 
   const reviews = await getReviewsForBusiness(listing.id);
   const [myReview, votedReviewIds] = session
@@ -178,20 +184,31 @@ export default async function SpaListingPage({ params }: PageProps) {
         </div>
       ) : null}
 
+      {!listing.ownerId ? (
+        <ClaimBanner businessId={listing.id} isSignedIn={Boolean(session)} />
+      ) : null}
+
       <div className="flex flex-wrap gap-3">
         {listing.contactNumber ? (
-          <a href={`tel:${listing.contactNumber}`} className="btn-primary">
+          <TrackedLink
+            eventType="contact_click"
+            businessId={listing.id}
+            href={`tel:${listing.contactNumber}`}
+            className="btn-primary"
+          >
             Call {listing.contactNumber}
-          </a>
+          </TrackedLink>
         ) : null}
-        <a
+        <TrackedLink
+          eventType="directions_click"
+          businessId={listing.id}
           href={`https://www.openstreetmap.org/directions?to=${listing.location.latitude}%2C${listing.location.longitude}`}
           target="_blank"
           rel="noopener noreferrer"
           className="btn-secondary"
         >
           Get directions
-        </a>
+        </TrackedLink>
         <SavedToggle
           businessId={listing.id}
           slug={listing.slug}

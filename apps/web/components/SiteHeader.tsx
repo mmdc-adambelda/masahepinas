@@ -1,12 +1,11 @@
 import Link from 'next/link';
 import { APP_NAME } from '@masahepinas/config';
+import { hasRole, isStaff } from '@masahepinas/types';
 import { getServerAuthSession } from '@/lib/auth';
 import { signOut } from '@/app/(auth)/actions';
 
-/** Minimal, role-agnostic top nav so the pages built across Phases 1-4 are
- * actually reachable from one another. A richer role-aware nav (owner/
- * moderator/superadmin sections) is a Phase 5+ polish item once those
- * dashboards exist. */
+/** Minimal, role-aware top nav so the pages built across Phases 1-5 are
+ * actually reachable from one another. */
 export async function SiteHeader() {
   const session = await getServerAuthSession();
 
@@ -16,7 +15,7 @@ export async function SiteHeader() {
         <Link href="/" className="text-sm font-semibold text-foreground">
           {APP_NAME}
         </Link>
-        <nav className="flex items-center gap-4 text-sm text-foreground-secondary">
+        <nav className="flex flex-wrap items-center gap-4 text-sm text-foreground-secondary">
           <Link href="/search" className="hover:text-foreground">
             Search
           </Link>
@@ -31,6 +30,16 @@ export async function SiteHeader() {
               <Link href="/notifications" className="hover:text-foreground">
                 Notifications
               </Link>
+              {hasRole(session, 'spa_owner') ? (
+                <Link href="/owner/dashboard" className="hover:text-foreground">
+                  Owner dashboard
+                </Link>
+              ) : null}
+              {isStaff(session) ? (
+                <Link href="/admin" className="hover:text-foreground">
+                  Admin
+                </Link>
+              ) : null}
               <Link href={`/u/${session.userId}`} className="hover:text-foreground">
                 {session.profile?.displayName ?? 'Profile'}
               </Link>

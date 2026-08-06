@@ -7,14 +7,15 @@ shipped as a shared-backend web app + mobile app.
 
 ## Project Status
 
-**Phase 4 — Customer Community & Credibility (complete).** Customers have
-public profiles with real stats and an 11-badge catalog awarded
-automatically from review activity; they can follow/unfollow each other
-and manage their profile settings. A site-wide nav bar now ties the pages
-from every phase together. See
-[docs/development-roadmap.md](./docs/development-roadmap.md) for the full
-phase plan and current known limitations; Phase 5 (Spa Owner Portal) is
-next.
+**Phase 5 — Spa Owner Portal + Superadmin Admin Dashboard (complete).**
+Owners get a real dashboard (`/owner/dashboard`) with analytics from actual
+tracked events, business claiming, and private verification-document
+upload. Superadmins/moderators get a working in-app admin dashboard
+(`/admin`) — user management, listing verification (accepting new business
+registrations), and business claim review — pulled forward from Phase 7 on
+request. See [docs/development-roadmap.md](./docs/development-roadmap.md)
+for the full phase plan and current known limitations; Phase 6 (Premium
+Subscription) is next.
 
 ## Planning Documents
 
@@ -87,7 +88,8 @@ npm install
      order (0001: profiles/roles/RLS; 0002: RLS recursion fix; 0003: spa
      directory schema/RLS/storage; 0004: spa-owner signup trigger; 0005:
      search RPC; 0006: reviews/replies/votes/reports/moderation/
-     notifications; 0007: follows/badges/credibility scoring). Without CLI
+     notifications; 0007: follows/badges/credibility scoring; 0008: owner
+     analytics/verification/business claims/admin audit log). Without CLI
      access, paste each file into the Supabase SQL Editor in filename order
      instead.
    - Bootstrap your first superadmin locally by signing up a normal account
@@ -119,7 +121,13 @@ nested under `apps/mobile/node_modules` instead, and
 `apps/mobile/metro.config.js` is configured to prefer that local copy. If
 this pin is ever removed, `next build` breaks with a React error #31 caused
 by Next's server bundle and the app's client bundle resolving two different
-React copies — keep the root-level React dependency in place.
+React copies — keep the root-level React dependency in place. The same
+applies to `@types/react`/`@types/react-dom` (pinned at the root to ^19 for
+the same reason — apps/web and packages/* need a single consistent React
+type identity, or TS reports spurious `ReactNode`/`children` mismatches).
+`.npmrc` sets `legacy-peer-deps=true` so `npm install` doesn't fail on the
+resulting react-native/react peer conflict — that's expected, not a sign
+something's broken.
 
 ## Contributing / Working Rules
 
