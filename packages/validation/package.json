@@ -12,7 +12,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "zod": "^3.23.0"
+    "zod": "^3.23.0",
+    "@masahepinas/config": "*",
+    "@masahepinas/types": "*"
   },
   "devDependencies": {
     "vitest": "^2.1.0"

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { IMAGE_LIMITS } from '@masahepinas/config';
 import { requireRole } from '@/lib/auth';
 import { getMyBusiness, listServiceCategories } from '@/lib/spa-businesses';
@@ -39,6 +40,12 @@ export default async function SubmitSpaPage() {
           — your listing goes live once a moderator verifies it. You can keep editing
           these details any time.
         </p>
+        <Link
+          href="/owner/reviews"
+          className="inline-block text-sm text-brand-accent hover:underline"
+        >
+          Manage reviews →
+        </Link>
       </div>
 
       <SubmitSpaForm business={business} categories={categories} />

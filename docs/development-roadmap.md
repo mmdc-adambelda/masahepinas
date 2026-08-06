@@ -76,14 +76,44 @@ all pass; `next build` succeeds against the live linked Supabase project.
 - `spa_owners` table (verification documents, business permit info) —
   Phase 5 "Spa Owner Portal".
 
-## Phase 3 — Reviews & Owner Responses
+## Phase 3 — Reviews & Owner Responses — ✅ Complete (2026-08-06)
 
 Review submission + category ratings, editing, owner replies, helpful votes,
 reporting, moderation status, review edit history, basic anti-spam
 (rate limits, one-active-review-per-spa enforcement), owner notifications.
-**Acceptance:** duplicate reviews blocked (edit existing instead), owner
-replies scoped to own spa only, no owner delete-review capability exists
-anywhere in the UI or API, moderator hide action is logged.
+**Acceptance:** duplicate reviews blocked — a unique index
+(`business_id`, `customer_id`) plus the `submitReview` action always
+updates an existing row instead of inserting a second one; owner replies
+scoped to own spa only (`review_replies_insert`/`update` RLS require
+`owns_business(business_id)`); no owner delete-review capability exists
+anywhere in the UI or API (no delete policy is even granted on `reviews`
+to non-staff); a moderator can hide a reported review from
+`/admin/reports`, and every hide/restore/dismiss action inserts a row into
+`moderation_actions` with a required reason — verified live.
+**Enforced at the database layer, not just the app:**
+
+- Self-review and self-vote are blocked by RLS `with check` clauses (an
+  owner cannot review their own business; a customer cannot mark their own
+  review helpful), not merely hidden in the UI.
+- `average_rating`/`review_count`/`verified_review_count` on
+  `spa_businesses` and `helpful_count` on `reviews` are recomputed by DB
+  triggers from the actual rows — never trusted as client input.
+- Review edit history (`review_edits`) is populated automatically by a
+  `BEFORE UPDATE` trigger; there is no code path that edits a review
+  without leaving a history row.
+  **Deferred to later phases (tracked, not dropped):**
+- The full Moderator Dashboard (all queues, escalation, appeals) is Phase
+  7 — `/admin/reports` is a minimal but fully functional "hide/restore/
+  dismiss with logged reason" surface covering the Phase 3 acceptance
+  criteria, not the complete moderation UI.
+- Verified-visit methods (booking reference, QR code, one-time code) are
+  not implemented — `is_verified_visit` exists on the schema but nothing
+  sets it yet; manual moderator verification is Phase 5+.
+- Rate limiting on review/report submission (beyond the one-review-per-
+  business constraint) is Phase 8 ("abuse and rate-limit testing").
+- Mobile has review submit/edit/helpful-vote but no owner-reply UI or
+  moderation queue — those stay web-only for now, consistent with owner/
+  moderator tooling generally being desktop-first in this MVP.
 
 ## Phase 4 — Customer Community & Credibility
 

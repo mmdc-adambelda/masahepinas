@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   Image,
   Pressable,
   Linking,
+  TextInput,
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
@@ -18,6 +19,13 @@ import {
   toggleSaved,
   type ListingDetail,
 } from '@/lib/spa-businesses';
+import {
+  getMyReview,
+  getReviewsForBusiness,
+  submitReview,
+  toggleHelpfulVote,
+  type ReviewItem,
+} from '@/lib/reviews';
 import { useAuth } from '@/lib/auth-context';
 
 export default function SpaDetailScreen() {
@@ -26,6 +34,31 @@ export default function SpaDetailScreen() {
   const [listing, setListing] = useState<ListingDetail | null>(null);
   const [saved, setSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [myReview, setMyReview] = useState<{
+    id: string;
+    overallRating: number;
+    body: string;
+  } | null>(null);
+  const [draftRating, setDraftRating] = useState(5);
+  const [draftBody, setDraftBody] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+
+  const loadReviews = useCallback(
+    async (businessId: string) => {
+      setReviews(await getReviewsForBusiness(businessId));
+      if (session) {
+        const mine = await getMyReview(businessId, session.userId);
+        setMyReview(mine);
+        if (mine) {
+          setDraftRating(mine.overallRating);
+          setDraftBody(mine.body);
+        }
+      }
+    },
+    [session],
+  );
 
   useEffect(() => {
     if (!slug) return;
@@ -34,9 +67,38 @@ export default function SpaDetailScreen() {
       if (found && session) {
         setSaved(await isSaved(session.userId, found.id));
       }
+      if (found) await loadReviews(found.id);
       setIsLoading(false);
     });
-  }, [slug, session]);
+  }, [slug, session, loadReviews]);
+
+  async function handleSubmitReview() {
+    if (!listing || !session || draftBody.trim().length < 10) {
+      setReviewError('Write at least 10 characters.');
+      return;
+    }
+    setIsSubmittingReview(true);
+    setReviewError(null);
+    const result = await submitReview(
+      listing.id,
+      session.userId,
+      draftRating,
+      draftBody.trim(),
+      myReview?.id ?? null,
+    );
+    setIsSubmittingReview(false);
+    if (result.error) {
+      setReviewError(result.error);
+      return;
+    }
+    await loadReviews(listing.id);
+  }
+
+  async function handleHelpful(reviewId: string) {
+    if (!session) return;
+    await toggleHelpfulVote(reviewId, session.userId);
+    if (listing) await loadReviews(listing.id);
+  }
 
   if (isLoading) {
     return (
@@ -140,6 +202,73 @@ export default function SpaDetailScreen() {
             </View>
           ))}
       </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Reviews</Text>
+
+        {!session ? (
+          <Text style={styles.body}>Sign in to write a review.</Text>
+        ) : (
+          <View style={styles.reviewForm}>
+            <View style={styles.starRow}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <Pressable key={n} onPress={() => setDraftRating(n)}>
+                  <Text
+                    style={[styles.star, n <= draftRating ? styles.starActive : null]}
+                  >
+                    ★
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <TextInput
+              style={styles.reviewInput}
+              placeholder="Write your review…"
+              placeholderTextColor={colors.textSecondary}
+              value={draftBody}
+              onChangeText={setDraftBody}
+              multiline
+            />
+            {reviewError ? <Text style={styles.errorText}>{reviewError}</Text> : null}
+            <Pressable
+              style={styles.actionButton}
+              onPress={handleSubmitReview}
+              disabled={isSubmittingReview}
+            >
+              <Text style={styles.actionButtonText}>
+                {isSubmittingReview
+                  ? 'Saving…'
+                  : myReview
+                    ? 'Update review'
+                    : 'Submit review'}
+              </Text>
+            </Pressable>
+          </View>
+        )}
+
+        {reviews.length === 0 ? (
+          <Text style={styles.body}>No reviews yet — be the first.</Text>
+        ) : (
+          reviews.map((review) => (
+            <View key={review.id} style={styles.reviewCard}>
+              <View style={styles.reviewHeader}>
+                <Text style={styles.reviewAuthor}>{review.customerDisplayName}</Text>
+                <Text style={styles.body}>★ {review.overallRating}</Text>
+              </View>
+              <Text style={styles.body}>{review.body}</Text>
+              {review.replyBody ? (
+                <View style={styles.replyBox}>
+                  <Text style={styles.replyLabel}>Response from the owner</Text>
+                  <Text style={styles.body}>{review.replyBody}</Text>
+                </View>
+              ) : null}
+              <Pressable onPress={() => handleHelpful(review.id)}>
+                <Text style={styles.helpfulText}>Helpful ({review.helpfulCount})</Text>
+              </Pressable>
+            </View>
+          ))
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -226,5 +355,70 @@ const styles = StyleSheet.create({
   hourDay: {
     color: colors.textMain,
     fontSize: typography.size.sm,
+  },
+  reviewForm: {
+    gap: spacing.xs,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+  },
+  starRow: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  star: {
+    fontSize: 22,
+    color: colors.textSecondary,
+  },
+  starActive: {
+    color: colors.warning,
+  },
+  reviewInput: {
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    color: colors.textMain,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    fontSize: typography.size.sm,
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
+  errorText: {
+    color: colors.error,
+    fontSize: typography.size.xs,
+  },
+  reviewCard: {
+    gap: 4,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  reviewAuthor: {
+    color: colors.textMain,
+    fontSize: typography.size.sm,
+    fontWeight: '600',
+  },
+  replyBox: {
+    borderLeftWidth: 2,
+    borderLeftColor: colors.mutedGreen,
+    paddingLeft: spacing.sm,
+    marginTop: 4,
+  },
+  replyLabel: {
+    color: colors.accentGreen,
+    fontSize: typography.size.xs,
+    fontWeight: '600',
+  },
+  helpfulText: {
+    color: colors.textSecondary,
+    fontSize: typography.size.xs,
+    marginTop: 4,
   },
 });

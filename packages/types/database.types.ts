@@ -19,7 +19,12 @@ import type {
   AppRole,
   GenderAvailability,
   ListingStatus,
+  ModerationActionType,
   PriceRange,
+  ReportReason,
+  ReportStatus,
+  ReportTargetType,
+  ReviewModerationStatus,
 } from './enums';
 
 export interface Database {
@@ -306,6 +311,206 @@ export interface Database {
           },
         ];
       };
+      reviews: {
+        Row: {
+          id: string;
+          business_id: string;
+          customer_id: string;
+          overall_rating: number;
+          body: string;
+          service_date: string | null;
+          service_category_id: string | null;
+          is_verified_visit: boolean;
+          helpful_count: number;
+          moderation_status: ReviewModerationStatus;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          customer_id: string;
+          overall_rating: number;
+          body: string;
+          service_date?: string | null;
+          service_category_id?: string | null;
+          is_verified_visit?: boolean;
+          moderation_status?: ReviewModerationStatus;
+        };
+        Update: Partial<Database['public']['Tables']['reviews']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'reviews_business_id_fkey';
+            columns: ['business_id'];
+            isOneToOne: false;
+            referencedRelation: 'spa_businesses';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      review_ratings: {
+        Row: {
+          id: string;
+          review_id: string;
+          category: string;
+          rating: number;
+        };
+        Insert: {
+          id?: string;
+          review_id: string;
+          category: string;
+          rating: number;
+        };
+        Update: Partial<Database['public']['Tables']['review_ratings']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'review_ratings_review_id_fkey';
+            columns: ['review_id'];
+            isOneToOne: false;
+            referencedRelation: 'reviews';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      review_replies: {
+        Row: {
+          id: string;
+          review_id: string;
+          business_id: string;
+          replied_by: string;
+          body: string;
+          created_at: string;
+          edited_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          review_id: string;
+          business_id: string;
+          replied_by: string;
+          body: string;
+        };
+        Update: Partial<Database['public']['Tables']['review_replies']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'review_replies_review_id_fkey';
+            columns: ['review_id'];
+            isOneToOne: true;
+            referencedRelation: 'reviews';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      review_edits: {
+        Row: {
+          id: string;
+          review_id: string;
+          previous_body: string;
+          previous_rating: number;
+          edited_at: string;
+        };
+        Insert: {
+          id?: string;
+          review_id: string;
+          previous_body: string;
+          previous_rating: number;
+        };
+        Update: Partial<Database['public']['Tables']['review_edits']['Insert']>;
+        Relationships: [];
+      };
+      review_helpful_votes: {
+        Row: {
+          id: string;
+          review_id: string;
+          voter_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          review_id: string;
+          voter_id: string;
+        };
+        Update: Partial<Database['public']['Tables']['review_helpful_votes']['Insert']>;
+        Relationships: [];
+      };
+      content_reports: {
+        Row: {
+          id: string;
+          reporter_id: string;
+          target_type: ReportTargetType;
+          target_id: string;
+          reason: ReportReason;
+          details: string | null;
+          status: ReportStatus;
+          assigned_moderator_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          reporter_id: string;
+          target_type: ReportTargetType;
+          target_id: string;
+          reason: ReportReason;
+          details?: string | null;
+          status?: ReportStatus;
+        };
+        Update: Partial<Database['public']['Tables']['content_reports']['Insert']>;
+        Relationships: [];
+      };
+      moderation_actions: {
+        Row: {
+          id: string;
+          moderator_id: string;
+          action_type: ModerationActionType;
+          target_type: string;
+          target_id: string;
+          reason: string;
+          notes: string | null;
+          previous_state: unknown;
+          new_state: unknown;
+          report_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          moderator_id: string;
+          action_type: ModerationActionType;
+          target_type: string;
+          target_id: string;
+          reason: string;
+          notes?: string | null;
+          report_id?: string | null;
+          previous_state?: unknown;
+          new_state?: unknown;
+        };
+        Update: Partial<Database['public']['Tables']['moderation_actions']['Insert']>;
+        Relationships: [];
+      };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: string;
+          title: string;
+          body: string | null;
+          link_url: string | null;
+          is_read: boolean;
+          metadata: unknown;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          type: string;
+          title: string;
+          body?: string | null;
+          link_url?: string | null;
+          is_read?: boolean;
+        };
+        Update: Partial<Database['public']['Tables']['notifications']['Insert']>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -358,6 +563,11 @@ export interface Database {
       listing_status: ListingStatus;
       gender_availability: GenderAvailability;
       price_range: PriceRange;
+      review_moderation_status: ReviewModerationStatus;
+      report_status: ReportStatus;
+      report_target_type: ReportTargetType;
+      report_reason: ReportReason;
+      moderation_action_type: ModerationActionType;
     };
     CompositeTypes: Record<string, never>;
   };

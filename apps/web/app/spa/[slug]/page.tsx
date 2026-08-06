@@ -6,8 +6,16 @@ import { APP_NAME } from '@masahepinas/config';
 import { getListingBySlug } from '@/lib/spa-businesses';
 import { getServerAuthSession } from '@/lib/auth';
 import { isBusinessSaved } from '@/lib/saved';
+import {
+  getMyHelpfulVotes,
+  getMyReviewForBusiness,
+  getReviewsForBusiness,
+} from '@/lib/reviews';
 import { ListingMap } from '@/components/ListingMap';
+import { ReportButton } from '@/components/ReportButton';
 import { SavedToggle } from './saved-toggle';
+import { ReviewForm } from './review-form';
+import { ReviewList } from './review-list';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -44,6 +52,18 @@ export default async function SpaListingPage({ params }: PageProps) {
 
   const session = await getServerAuthSession();
   const saved = session ? await isBusinessSaved(session.userId, listing.id) : false;
+  const isOwner = session?.userId === listing.ownerId;
+
+  const reviews = await getReviewsForBusiness(listing.id);
+  const [myReview, votedReviewIds] = session
+    ? await Promise.all([
+        getMyReviewForBusiness(listing.id, session.userId),
+        getMyHelpfulVotes(
+          reviews.map((r) => r.id),
+          session.userId,
+        ),
+      ])
+    : [null, new Set<string>()];
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -178,6 +198,7 @@ export default async function SpaListingPage({ params }: PageProps) {
           initialSaved={saved}
           isSignedIn={Boolean(session)}
         />
+        {session ? <ReportButton targetType="listing" targetId={listing.id} /> : null}
       </div>
 
       {listing.description ? (
@@ -240,6 +261,36 @@ export default async function SpaListingPage({ params }: PageProps) {
           latitude={listing.location.latitude}
           longitude={listing.location.longitude}
           label={listing.businessName}
+        />
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-foreground">Reviews</h2>
+
+        {!session ? (
+          <p className="text-sm text-foreground-secondary">
+            <a href="/sign-in" className="text-brand-accent hover:underline">
+              Sign in
+            </a>{' '}
+            to write a review.
+          </p>
+        ) : isOwner ? (
+          <p className="text-sm text-foreground-secondary">
+            You can&apos;t review your own business.
+          </p>
+        ) : (
+          <ReviewForm
+            businessId={listing.id}
+            slug={listing.slug}
+            existingReview={myReview}
+          />
+        )}
+
+        <ReviewList
+          reviews={reviews}
+          slug={listing.slug}
+          votedReviewIds={votedReviewIds}
+          isSignedIn={Boolean(session)}
         />
       </section>
     </main>

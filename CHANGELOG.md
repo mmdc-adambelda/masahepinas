@@ -5,6 +5,50 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Phase 3 — Reviews & Owner Responses (2026-08-06)
+
+#### Added
+
+- `supabase/migrations/0006_reviews.sql`: `reviews`, `review_ratings`,
+  `review_replies`, `review_edits`, `review_helpful_votes`,
+  `content_reports`, `moderation_actions`, `notifications`; RLS on all of
+  them; DB triggers recomputing `spa_businesses.average_rating`/
+  `review_count`/`verified_review_count` and `reviews.helpful_count` from
+  real rows (via a transaction-local guard-bypass flag so the existing
+  owner-protection trigger from Phase 2 doesn't block these internal
+  system updates); an append-only `review_edits` history trigger; a
+  new-review owner-notification trigger.
+- `packages/types/review.ts`, `packages/validation/review.ts` (review
+  submission, reply, and report schemas shared by web and mobile).
+- **Web**: review submit/edit form + list with category ratings, helpful
+  voting, and a report modal on `/spa/[slug]`; `/owner/reviews` (reply to
+  reviews on your own business); `/notifications` (mark read/mark all
+  read); `/admin/reports` (staff-only: hide/restore a reported review or
+  dismiss the report, each requiring a logged reason).
+- **Mobile**: review submit/edit, list, and helpful-vote wired into the
+  `spa/[slug]` detail screen.
+
+#### Security
+
+- Self-review and self-helpful-vote are blocked by RLS `with check`
+  clauses at the database layer, not just hidden in the UI.
+- Rating/review-count aggregates and helpful counts are always
+  server-computed from actual rows — no code path lets a client set them
+  directly.
+- Every moderator hide/restore/dismiss action requires a reason and is
+  logged to `moderation_actions`, verified live against the linked
+  Supabase project.
+
+#### Known Limitations / Deferred
+
+- `/admin/reports` is a minimal, functional moderation surface, not the
+  full Phase 7 Moderator Dashboard (no queues beyond reports, no
+  escalation/appeals yet).
+- Verified-visit review verification (booking reference/QR/one-time code)
+  is not implemented — `is_verified_visit` exists on the schema but is
+  always `false` for now.
+- Mobile has no owner-reply or moderation UI yet (web-only).
+
 ### Phase 2 — Spa Directory & Location Discovery (2026-08-05)
 
 #### Added
