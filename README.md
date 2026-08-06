@@ -110,9 +110,10 @@ npm install
      notifications; 0007: follows/badges/credibility scoring; 0008: owner
      analytics/verification/business claims/admin audit log; 0009: premium
      subscription plans/checkout/billing; 0010: recommendations/featured
-     placements/appeals/badge+service catalog management). Without CLI
-     access, paste each file into the Supabase SQL Editor in filename
-     order instead.
+     placements/appeals/badge+service catalog management; 0011: fixes a
+     bug in 0010's `appeals_insert` RLS policy — see the migration file
+     for detail). Without CLI access, paste each file into the Supabase
+     SQL Editor in filename order instead.
    - Bootstrap your first superadmin locally by signing up a normal account
      through the app, then running the SQL noted in `supabase/seed.sql`.
    - Optionally run `supabase/seed.sql`'s fictional spa listings (clearly

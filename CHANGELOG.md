@@ -5,6 +5,30 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Post-Phase-8 fix (2026-08-06)
+
+Running [supabase/tests/rls_test_suite.sql](supabase/tests/rls_test_suite.sql)
+against the live project (as instructed) caught a real production bug the
+suite was specifically written to catch:
+
+- **`supabase/migrations/0011_fix_appeals_insert_policy.sql`**: `0010`'s
+  `appeals_insert` RLS policy checked that the referenced
+  `moderation_action_id` existed via a raw subquery on
+  `moderation_actions`. That subquery is itself subject to
+  `moderation_actions`' own RLS (staff-only `SELECT`), so for any
+  non-staff caller — i.e. every real appellant — the existence check
+  always evaluated false and the insert was silently rejected. **The
+  appeals feature shipped in Phase 7 was completely non-functional for
+  real users**; only a moderator/superadmin could have submitted one.
+  Fixed with a `SECURITY DEFINER` helper (`moderation_action_exists`),
+  the same pattern used for `is_staff()`/`is_superadmin()`. No
+  application code changed — `submitAppeal()` was already correct.
+- Also fixed the test suite itself: it had made the identical mistake
+  (querying `moderation_actions` as the non-staff persona to find the
+  action id to appeal) — now captures the id while still authenticated
+  as staff, then hands it directly to the non-staff persona's insert,
+  matching how the real app passes `actionId` via the notification link.
+
 ### Phase 8 — QA & Launch Preparation (2026-08-06)
 
 #### Added

@@ -2,7 +2,7 @@
 -- Masahe Pinas — RLS / Permission Boundary Test Suite (Phase 8)
 -- =====================================================================
 -- Purpose: exercise the row-level-security policies from migrations
--- 0001-0010 as each of the app's real personas (guest/anon, customer,
+-- 0001-0011 as each of the app's real personas (guest/anon, customer,
 -- a second customer, spa_owner, moderator, superadmin) and assert the
 -- expected allow/deny outcome for the boundary cases called out in
 -- docs/security-checklist.md and docs/permissions.md.
@@ -306,6 +306,19 @@ select pg_temp.expect_rows(
   1
 );
 
+-- Capture the id while still authenticated as the moderator (a4), who can
+-- actually SELECT it — moderation_actions_select is staff-only, so the
+-- appeals block below (submitted by non-staff a1) cannot look this up
+-- itself; it has to be handed the id directly, exactly like the real app
+-- does (the actionId comes from a notification link, never a client-side
+-- query against moderation_actions — see appeals/new/[actionId]/actions.ts).
+create temporary table pg_temp.captured_moderation_action as
+select id from public.moderation_actions
+where target_id = '00000000-0000-0000-0000-0000000000c1'
+  and moderator_id = '00000000-0000-0000-0000-0000000000a4'
+order by created_at desc
+limit 1;
+
 select pg_temp.expect_rows(
   'moderation_actions has no update policy for anyone (RLS filters, 0 rows affected)',
   $q$update public.moderation_actions set reason = 'tampered' where target_id = '00000000-0000-0000-0000-0000000000c1'$q$,
@@ -380,11 +393,22 @@ reset role;
 set local role authenticated;
 select pg_temp.set_persona('00000000-0000-0000-0000-0000000000a1', 'authenticated');
 
-select pg_temp.expect_rows(
-  'a user can appeal a moderation action taken against their own content',
-  $q$insert into public.appeals (submitted_by, moderation_action_id, message) select '00000000-0000-0000-0000-0000000000a1', id, 'please reconsider' from public.moderation_actions where target_id = '00000000-0000-0000-0000-0000000000c1' limit 1$q$,
-  1
-);
+do $$
+declare
+  v_action_id uuid;
+  v_sql text;
+begin
+  select id into v_action_id from pg_temp.captured_moderation_action limit 1;
+  v_sql := format(
+    $f$insert into public.appeals (submitted_by, moderation_action_id, message) values ('00000000-0000-0000-0000-0000000000a1', %L, 'please reconsider')$f$,
+    v_action_id
+  );
+  perform pg_temp.expect_rows(
+    'a user can appeal a moderation action taken against their own content',
+    v_sql,
+    1
+  );
+end $$;
 
 select pg_temp.expect_rows(
   'a non-staff appellant cannot resolve their own appeal (RLS filters the row)',
