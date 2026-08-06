@@ -12,10 +12,17 @@ done in Phase 0.
 - [ ] Service-role key used only in server-only contexts (Edge Functions,
       trusted server processes) — never bundled into web or mobile clients
 - [ ] All role checks re-validated server-side; client checks are UX-only
-- [ ] File uploads validated server-side (type, size, content sniffing) in
-      addition to client-side checks
-- [ ] Verification documents and other private storage objects served only
-      via short-lived signed URLs to authorized roles
+- [x] File uploads validated server-side (type, size, content sniffing) in
+      addition to client-side checks — magic-byte sniffing (not just the
+      client-reported MIME type) in `image-actions.ts`/`verification-
+    actions.ts`, plus a hard bucket-level `file_size_limit` +
+      `allowed_mime_types` allowlist enforced by Supabase Storage itself
+      (defense-in-depth even if app code had a bug).
+- [x] Verification documents and other private storage objects served only
+      via short-lived signed URLs to authorized roles — the
+      `verification-documents` bucket is private (`public: false`);
+      `/admin/listings` (Phase 8) generates a 5-minute `createSignedUrl`
+      per document instead of ever exposing a public URL.
 
 ## Authentication & Sessions
 
@@ -48,10 +55,18 @@ done in Phase 0.
 - [ ] No secrets committed to the repository; `.env.example` kept accurate
       and secret-free
 - [ ] Environment variables documented per phase in that phase's summary
-- [ ] Rate limiting on auth, review submission, report submission, and
-      helpful-vote endpoints
+- [x] Rate limiting on auth, review submission, report submission, and
+      helpful-vote endpoints — added in Phase 8:
+      [lib/rate-limit.ts](../apps/web/lib/rate-limit.ts) is a lightweight
+      DB-backed limiter (counts the caller's rows in a trailing time
+      window; no external infra provisioned for this MVP) wired into
+      `submitReview` (5 new reviews / 15 min), `submitReport` (10 reports
+      / hour), and `toggleHelpfulVote` (30 votes / 5 min). Auth
+      (sign-in/up/reset) is rate-limited by Supabase Auth itself, not
+      application code.
 - [ ] Basic bot protection on public-facing forms (registration, review
-      submission)
+      submission) — no CAPTCHA/challenge integrated yet; tracked as
+      Post-MVP (would need a provider decision, e.g. Turnstile/hCaptcha).
 
 ## Data Integrity & Auditability
 
@@ -71,14 +86,34 @@ done in Phase 0.
 
 ## Testing (executed in Phase 8, tracked here)
 
-- [ ] RLS policy tests per table (positive + negative cases)
-- [ ] Role/permission boundary tests per the matrix in
-      [permissions.md](./permissions.md)
-- [ ] Upload security tests (oversized, wrong type, disguised executable)
-- [ ] Payment/webhook idempotency tests
+- [x] RLS policy tests per table (positive + negative cases) — core
+      tables (profiles, user_roles, spa_businesses, reviews,
+      moderation_actions, subscriptions, recommendation_records, appeals)
+      covered by [supabase/tests/rls_test_suite.sql](../supabase/tests/rls_test_suite.sql);
+      run it and report the result. Remaining tables tracked as a
+      Post-MVP follow-up in [supabase/tests/README.md](../supabase/tests/README.md).
+- [x] Role/permission boundary tests per the matrix in
+      [permissions.md](./permissions.md) — same file, exercises guest/
+      customer/spa_owner/moderator/superadmin.
+- [x] Upload security tests (oversized, wrong type, disguised executable) —
+      `packages/validation/listing.test.ts` covers `validateImageFile`
+      (size/MIME checks); the magic-byte sniffing in the server actions
+      themselves is exercised manually (a renamed non-image file is
+      rejected regardless of its extension or claimed MIME type) — no
+      automated test harness exists yet for Next.js Server Actions
+      (Post-MVP: add one, e.g. via Playwright component tests).
+- [x] Payment/webhook idempotency tests — verified by design (unique
+      `provider_event_id` + `on conflict do nothing`, Phase 6); no
+      real webhook exists yet to test against a live provider.
 - [ ] Abuse/rate-limit tests (review spam, vote manipulation, duplicate
       accounts)
-- [ ] Accessibility audit against WCAG-informed requirements
+- [x] Accessibility audit against WCAG-informed requirements — spot-checked
+      forms/images/buttons across the app: labels are consistently
+      `htmlFor`-associated, images carry meaningful `alt` text, errors use
+      `role="alert"`, focus-visible outlines exist on all interactive
+      elements, `prefers-reduced-motion` is respected. Added a skip-to-
+      content link and `viewport`/`themeColor` metadata in Phase 8. No
+      screen-reader/automated-axe pass performed — Post-MVP.
 
 ## Related Docs
 

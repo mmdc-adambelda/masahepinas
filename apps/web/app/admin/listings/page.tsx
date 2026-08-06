@@ -71,6 +71,16 @@ export default async function AdminListingsPage({
                     Status: {listing.status} · {listing.ownerId ? 'Claimed' : 'Unclaimed'}
                   </p>
                 </div>
+                {listing.verificationDocumentUrl ? (
+                  <a
+                    href={listing.verificationDocumentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-brand-accent hover:underline"
+                  >
+                    View verification document ↗
+                  </a>
+                ) : null}
               </div>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <StatusForm

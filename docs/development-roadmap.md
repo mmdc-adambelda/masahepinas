@@ -1,6 +1,7 @@
 # Masahe Pinas — Development Roadmap
 
-Status: living document · Last updated: 2026-08-06
+Status: living document · MVP scope (Phases 1-8) complete · Last updated:
+2026-08-06
 
 Phases are executed in order. Each phase ends with the phase summary format
 defined in the master brief (features completed, files created/modified,
@@ -312,15 +313,66 @@ check` block another superadmin's edits).
   for MVP scale, revisit if the table grows large enough to need
   pagination/filters.
 
-## Phase 8 — QA & Launch Preparation
+## Phase 8 — QA & Launch Preparation — ✅ Complete (2026-08-06)
 
-Unit/integration/E2E tests, RLS test suite, permission-boundary tests,
-upload-security tests, payment tests, accessibility audit, responsive +
-Android/iOS device testing, performance pass (Core Web Vitals, map marker
-clustering, pagination), SEO audit, error-state and abuse/rate-limit
-testing. Deliverables: launch checklist, backup strategy, DB recovery plan,
-incident response guide, moderation ops guide, deployment guide, App
-Store/Play Store prep guides.
+RLS/permission-boundary test suite, expanded unit tests, an upload-security
+review, an accessibility + SEO pass, abuse/rate-limit hardening, and the
+full set of launch/ops documentation deliverables.
+**Delivered:**
+
+- [supabase/tests/rls_test_suite.sql](../supabase/tests/rls_test_suite.sql) —
+  a self-contained (transaction-rolled-back, safe against production)
+  suite exercising guest/customer/spa_owner/moderator/superadmin against
+  the RLS policies and guard triggers from migrations `0001`-`0010`:
+  profile/role boundaries, the `is_recommended` superadmin-only guard
+  (Phase 7), review/moderation-action visibility and immutability,
+  subscription privacy, and the full appeals flow. See
+  [supabase/tests/README.md](../supabase/tests/README.md) for what it
+  doesn't yet cover (Post-MVP).
+- 31 new unit tests across `packages/validation` (`review.test.ts`,
+  `search.test.ts`, `listing.test.ts`, including `validateImageFile`'s
+  size/MIME boundaries) — every schema file now has coverage, not just
+  auth.
+- Upload-security review: confirmed server-side magic-byte sniffing and
+  bucket-level size/MIME allowlists already existed (Phase 2/5); fixed a
+  real gap — the uploaded verification document had no staff-facing
+  viewer — by adding a 5-minute `createSignedUrl` link on
+  `/admin/listings` (never a public URL, since the bucket is private);
+  hardened the WEBP magic-byte check to require both the `RIFF` and
+  `WEBP` signatures, not just the RIFF prefix shared by other container
+  formats.
+- Accessibility + SEO: `metadataBase`/OpenGraph/Twitter card metadata,
+  `viewport`/`themeColor`, a skip-to-content link, `robots.ts`, and a
+  dynamic `sitemap.ts` (static routes + every verified listing). Spot-
+  checked forms/images/buttons — already solid from earlier phases
+  (labelled inputs, alt text, `role="alert"`, focus-visible states,
+  `prefers-reduced-motion`).
+- Abuse/rate-limit hardening: [lib/rate-limit.ts](../apps/web/lib/rate-limit.ts),
+  a DB-backed limiter (no external Redis/KV provisioned for this MVP)
+  wired into review submission, content reports, and helpful votes.
+- Launch/ops docs: [launch-checklist.md](./launch-checklist.md),
+  [backup-recovery.md](./backup-recovery.md),
+  [incident-response.md](./incident-response.md),
+  [moderation-ops-guide.md](./moderation-ops-guide.md),
+  [deployment-guide.md](./deployment-guide.md),
+  [app-store-prep.md](./app-store-prep.md).
+  **Acceptance:** `npx turbo run typecheck lint test --force` (14/14) and
+  `next build` both pass on the final Phase 8 commit;
+  [security-checklist.md](./security-checklist.md) re-audited item by
+  item, with every remaining unchecked item explicitly named as a
+  Post-MVP follow-up rather than silently dropped.
+  **Deliberately not performed in this engagement (see the relevant doc
+  for what's needed):**
+- No E2E test harness (Playwright/Cypress) — the app has no test runner
+  for Server Actions/browser flows yet; RLS and validation-schema tests
+  cover the security-critical surface in the meantime.
+- No real device testing (Android/iOS hardware) or App Store/Play Store
+  submission — see [app-store-prep.md](./app-store-prep.md).
+- No load/performance testing under real traffic, and no CAPTCHA/bot
+  challenge on public forms — both tracked as Post-MVP in
+  [security-checklist.md](./security-checklist.md).
+- No CI pipeline — see [deployment-guide.md](./deployment-guide.md) "CI"
+  for the natural first addition.
 
 ## MVP Scope Boundary
 

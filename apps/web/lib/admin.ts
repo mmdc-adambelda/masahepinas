@@ -130,6 +130,10 @@ export interface AdminListingRow {
   status: string;
   ownerId: string | null;
   createdAt: string;
+  /** Short-lived (5 min) signed URL to the owner's uploaded verification
+   * document, or null if they haven't uploaded one. Never a public URL —
+   * the bucket is private. */
+  verificationDocumentUrl: string | null;
 }
 
 export async function listListingsByStatus(
@@ -143,14 +147,48 @@ export async function listListingsByStatus(
     .order('created_at', { ascending: true });
 
   const { data } = status === 'all' ? await query : await query.eq('status', status);
+  const rows = data ?? [];
 
-  return (data ?? []).map((row) => ({
+  // Look up verification documents for the owners on this page and mint a
+  // short-lived (5 min) signed URL for each one that uploaded a document —
+  // the storage bucket is private (docs/security-checklist.md "Verification
+  // documents ... served only via short-lived signed URLs to authorized
+  // roles"), so staff can never see it via a plain public URL.
+  const ownerIds = rows.map((r) => r.owner_id).filter((id): id is string => Boolean(id));
+  const docPathByOwner = new Map<string, string>();
+  if (ownerIds.length > 0) {
+    const { data: owners } = await supabase
+      .from('spa_owners')
+      .select('user_id, verification_document_path')
+      .in('user_id', ownerIds)
+      .not('verification_document_path', 'is', null);
+    for (const owner of owners ?? []) {
+      if (owner.verification_document_path) {
+        docPathByOwner.set(owner.user_id, owner.verification_document_path);
+      }
+    }
+  }
+
+  const signedUrlByOwner = new Map<string, string>();
+  await Promise.all(
+    Array.from(docPathByOwner.entries()).map(async ([ownerId, path]) => {
+      const { data: signed } = await supabase.storage
+        .from('verification-documents')
+        .createSignedUrl(path, 300);
+      if (signed?.signedUrl) signedUrlByOwner.set(ownerId, signed.signedUrl);
+    }),
+  );
+
+  return rows.map((row) => ({
     id: row.id,
     slug: row.slug,
     businessName: row.business_name,
     status: row.status,
     ownerId: row.owner_id,
     createdAt: row.created_at,
+    verificationDocumentUrl: row.owner_id
+      ? (signedUrlByOwner.get(row.owner_id) ?? null)
+      : null,
   }));
 }
 

@@ -7,18 +7,23 @@ shipped as a shared-backend web app + mobile app.
 
 ## Project Status
 
-**Phase 7 — Moderation & Administration (complete).** Superadmins can curate
-an editorial "Recommended" list (`/admin/recommendations`, provably
-independent of Premium billing status), schedule featured placements
-(`/admin/featured`), manage the badge and service-category catalogs
-(`/admin/badges`, `/admin/services`), review the platform audit trail
-(`/admin/audit-logs`), and resolve user appeals of moderation decisions
-(`/admin/appeals`) — with overturned appeals automatically reversing the
-original action. Any user can appeal a moderation action taken against
-their content, account, or listing from a link in their notification. See
+**Phase 8 — QA & Launch Preparation (complete). MVP scope (Phases 1-8) is
+now complete.** An automated RLS/permission-boundary test suite
+([supabase/tests/rls_test_suite.sql](./supabase/tests/rls_test_suite.sql)),
+expanded unit tests, an upload-security review, an accessibility + SEO
+pass (sitemap, robots.txt, OpenGraph metadata), lightweight abuse/rate-limit
+protection on review/report/vote endpoints, and the full set of launch/ops
+docs — [launch checklist](./docs/launch-checklist.md),
+[backup & recovery](./docs/backup-recovery.md),
+[incident response](./docs/incident-response.md),
+[moderation ops guide](./docs/moderation-ops-guide.md),
+[deployment guide](./docs/deployment-guide.md), and
+[App Store/Play Store prep](./docs/app-store-prep.md). See
 [docs/development-roadmap.md](./docs/development-roadmap.md) for the full
-phase plan and current known limitations; Phase 8 (QA & Launch Preparation)
-is next.
+phase plan, and [docs/security-checklist.md](./docs/security-checklist.md)
+for exactly what's still open (mostly real device testing, store
+submission, and load testing — deliberately left as manual, user-owned
+next steps; see the launch checklist).
 
 ## Planning Documents
 
@@ -29,6 +34,17 @@ is next.
 - [Moderation Policy](./docs/moderation-policy.md)
 - [Development Roadmap](./docs/development-roadmap.md)
 - [Security Checklist](./docs/security-checklist.md)
+
+## Launch & Operations Docs
+
+- [Launch Checklist](./docs/launch-checklist.md)
+- [Backup & Recovery](./docs/backup-recovery.md)
+- [Incident Response](./docs/incident-response.md)
+- [Moderation Ops Guide](./docs/moderation-ops-guide.md)
+- [Deployment Guide](./docs/deployment-guide.md)
+- [App Store / Play Store Prep](./docs/app-store-prep.md)
+- [RLS Test Suite](./supabase/tests/rls_test_suite.sql) ·
+  [tests README](./supabase/tests/README.md)
 
 ## Planned Architecture (summary)
 

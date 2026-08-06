@@ -13,17 +13,27 @@ export interface ImageActionResult {
 const MAGIC_BYTES: { mime: string; bytes: number[] }[] = [
   { mime: 'image/jpeg', bytes: [0xff, 0xd8, 0xff] },
   { mime: 'image/png', bytes: [0x89, 0x50, 0x4e, 0x47] },
-  // WEBP: "RIFF" .... "WEBP" — check the RIFF magic; full "WEBP" check
-  // happens a few bytes later, RIFF alone is a good-enough signal here.
-  { mime: 'image/webp', bytes: [0x52, 0x49, 0x46, 0x46] },
 ];
+
+function matchesAt(bytes: Uint8Array, offset: number, signature: number[]): boolean {
+  return signature.every((byte, i) => bytes[offset + i] === byte);
+}
 
 /** Sniffs the actual file bytes rather than trusting the client-supplied
  * MIME type, per docs/security-checklist.md ("file uploads validated
  * server-side"). A renamed .exe with a fake .jpg extension fails this. */
 function detectImageType(bytes: Uint8Array): string | null {
   for (const { mime, bytes: signature } of MAGIC_BYTES) {
-    if (signature.every((byte, i) => bytes[i] === byte)) return mime;
+    if (matchesAt(bytes, 0, signature)) return mime;
+  }
+  // WEBP is a RIFF container: bytes 0-3 are "RIFF", bytes 8-11 are "WEBP".
+  // Checking both (not just the RIFF prefix shared by WAV/AVI/etc.) avoids
+  // misclassifying an unrelated RIFF-family file as a valid WEBP image.
+  if (
+    matchesAt(bytes, 0, [0x52, 0x49, 0x46, 0x46]) &&
+    matchesAt(bytes, 8, [0x57, 0x45, 0x42, 0x50])
+  ) {
+    return 'image/webp';
   }
   return null;
 }

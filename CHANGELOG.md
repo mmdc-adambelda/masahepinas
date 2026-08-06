@@ -5,6 +5,61 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Phase 8 — QA & Launch Preparation (2026-08-06)
+
+#### Added
+
+- `supabase/tests/rls_test_suite.sql` + `supabase/tests/README.md`: a
+  transaction-rolled-back (safe against production), self-contained RLS/
+  permission-boundary test suite covering profiles/user_roles,
+  spa_businesses (including the Phase 7 `is_recommended` superadmin-only
+  guard), reviews/moderation_actions, subscriptions, recommendation_
+  records, and the full appeals flow, across guest/customer/spa_owner/
+  moderator/superadmin.
+- `packages/validation/{review,search,listing}.test.ts`: 31 new unit
+  tests — every validation schema file now has coverage, including
+  `validateImageFile`'s size/MIME boundaries.
+- `apps/web/lib/rate-limit.ts`: a lightweight DB-backed rate limiter (no
+  external Redis/KV provisioned for this MVP) wired into review
+  submission (5/15min), content reports (10/hour), and helpful votes
+  (30/5min).
+- `apps/web/app/robots.ts`, `apps/web/app/sitemap.ts`: dynamic
+  robots.txt (disallowing account-scoped routes) and a sitemap covering
+  static routes + every verified listing.
+- `metadataBase`/OpenGraph/Twitter metadata, `viewport`/`themeColor`,
+  and a skip-to-content link in `apps/web/app/layout.tsx`.
+- Six launch/ops docs: `docs/launch-checklist.md`,
+  `docs/backup-recovery.md`, `docs/incident-response.md`,
+  `docs/moderation-ops-guide.md`, `docs/deployment-guide.md`,
+  `docs/app-store-prep.md`.
+
+#### Fixed
+
+- Staff had no way to view an owner's uploaded verification document when
+  deciding whether to verify a listing (`/admin/listings` never
+  surfaced it). Fixed with a 5-minute `createSignedUrl` link — never a
+  public URL, since the `verification-documents` bucket is private.
+- The WEBP magic-byte check in `image-actions.ts` only checked the
+  `RIFF` prefix shared by other RIFF-family container formats (WAV,
+  AVI); now requires both `RIFF` and `WEBP` signatures.
+
+#### Security
+
+- Re-audited [security-checklist.md](docs/security-checklist.md) item
+  by item; every remaining unchecked item is now named as an explicit
+  Post-MVP follow-up (no CAPTCHA/bot challenge, no automated E2E harness,
+  no real device testing) rather than a silent gap.
+
+#### Known Limitations / Deferred
+
+- No E2E test harness (Playwright/Cypress); no CI pipeline.
+- No real device testing or App Store/Play Store submission — see
+  `docs/app-store-prep.md`.
+- No load/performance testing under real traffic.
+- RLS test suite covers the core/high-risk tables; a few lower-risk
+  tables (`saved_businesses`, `user_follows`, `badges`, etc.) don't have
+  a dedicated assertion block yet — same pattern, mechanical to extend.
+
 ### Phase 7 — Moderation & Administration (2026-08-06)
 
 #### Added

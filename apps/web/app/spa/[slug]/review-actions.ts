@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { contentReportSchema, reviewSubmissionSchema } from '@masahepinas/validation';
 import { requireAuth } from '@/lib/auth';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export interface ReviewActionResult {
@@ -60,6 +61,20 @@ export async function submitReview(
     .maybeSingle();
 
   let reviewId = existing?.id;
+
+  if (!existing) {
+    // Only rate-limit new reviews — editing your one existing review isn't
+    // a spam vector (the unique index already caps it at one per business).
+    const rateLimitError = await checkRateLimit({
+      table: 'reviews',
+      userColumn: 'customer_id',
+      userId: session.userId,
+      maxCount: 5,
+      windowMinutes: 15,
+      message: "You're posting reviews too quickly. Please wait a bit and try again.",
+    });
+    if (rateLimitError) return { error: rateLimitError };
+  }
 
   if (existing) {
     const { error } = await supabase
@@ -132,6 +147,16 @@ export async function toggleHelpfulVote(
     return { helpful: false, error: null };
   }
 
+  const rateLimitError = await checkRateLimit({
+    table: 'review_helpful_votes',
+    userColumn: 'voter_id',
+    userId: session.userId,
+    maxCount: 30,
+    windowMinutes: 5,
+    message: "You're voting too quickly. Please wait a bit and try again.",
+  });
+  if (rateLimitError) return { helpful: false, error: rateLimitError };
+
   const { error } = await supabase
     .from('review_helpful_votes')
     .insert({ review_id: reviewId, voter_id: session.userId });
@@ -160,6 +185,16 @@ export async function submitReport(
       error: parsed.error.issues[0]?.message ?? 'Select a reason for your report.',
     };
   }
+
+  const rateLimitError = await checkRateLimit({
+    table: 'content_reports',
+    userColumn: 'reporter_id',
+    userId: session.userId,
+    maxCount: 10,
+    windowMinutes: 60,
+    message: "You've submitted a lot of reports recently. Please wait a bit and try again.",
+  });
+  if (rateLimitError) return { error: rateLimitError };
 
   const { error } = await supabase.from('content_reports').insert({
     reporter_id: session.userId,
