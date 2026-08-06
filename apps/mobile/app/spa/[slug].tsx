@@ -10,7 +10,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { colors, radius, spacing, typography } from '@masahepinas/ui/tokens';
 import { DAY_NAMES } from '@masahepinas/types';
 import {
@@ -252,7 +252,9 @@ export default function SpaDetailScreen() {
           reviews.map((review) => (
             <View key={review.id} style={styles.reviewCard}>
               <View style={styles.reviewHeader}>
-                <Text style={styles.reviewAuthor}>{review.customerDisplayName}</Text>
+                <Pressable onPress={() => router.push(`/u/${review.customerId}`)}>
+                  <Text style={styles.reviewAuthor}>{review.customerDisplayName}</Text>
+                </Pressable>
                 <Text style={styles.body}>★ {review.overallRating}</Text>
               </View>
               <Text style={styles.body}>{review.body}</Text>

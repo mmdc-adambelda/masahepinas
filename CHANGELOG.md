@@ -5,6 +5,52 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Phase 4 — Customer Community & Credibility (2026-08-06)
+
+#### Added
+
+- `supabase/migrations/0007_community.sql`: `user_follows`, `badges`,
+  `user_badges`, and a **private** `user_credibility_scores` table; an
+  11-badge catalog seed (review-count tiers, helpful-votes badge,
+  detailed-reviewer badge, community-contributor badge, 3
+  province-specific "Explorer" badges); `award_badge_if_missing`/
+  `evaluate_and_award_badges`/`recompute_credibility_score` `SECURITY
+DEFINER` functions wired into the review and helpful-vote lifecycle.
+- **Web**: `/u/[userId]` public profile (stats, badges, recent reviews,
+  follow button), `/u/[userId]/followers`, `/u/[userId]/following`,
+  `/settings/profile`; a site-wide `SiteHeader` nav bar (Search, Map,
+  Saved, Notifications, Profile, sign in/out) added to the root layout so
+  the pages built across Phases 1-4 are actually reachable from each
+  other; review authors now link to their profile.
+- **Mobile**: Profile tab shows real review/helpful/follower/following
+  counts and earned badges; new `u/[userId]` public profile screen with
+  follow, reachable by tapping a review author's name.
+
+#### Security
+
+- The credibility score is deliberately **not** a column on the publicly
+  readable `profiles` table — RLS is row-level, not column-level, so a
+  score sitting there would be readable by anyone regardless of how the
+  app queries it. It lives in `user_credibility_scores`, a separate table
+  with a self-or-staff-only `select` policy.
+- `user_badges` has no client-facing insert/update/delete policy at all —
+  the only way a badge is ever awarded is the `SECURITY DEFINER` functions
+  above, triggered by real review/vote activity. A customer cannot grant
+  themselves a badge through any API call.
+- Self-follow is blocked by a DB `check` constraint, not just app logic.
+
+#### Known Limitations / Deferred
+
+- No automated activity feed ("reviews from people you follow") yet —
+  Post-MVP backlog.
+- No anti-fraud/suspicious-activity detection beyond the credibility score
+  formula itself (duplicate-account and vote-manipulation detection are
+  Post-MVP).
+- Badge criteria referencing `is_verified_visit` are wired but currently
+  unreachable, since nothing sets that column yet (Phase 5+).
+- Mobile has no settings screen and Community tab is still a placeholder;
+  profile/follow work via the Profile tab and review-author links instead.
+
 ### Phase 3 — Reviews & Owner Responses (2026-08-06)
 
 #### Added

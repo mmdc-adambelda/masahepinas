@@ -7,14 +7,14 @@ shipped as a shared-backend web app + mobile app.
 
 ## Project Status
 
-**Phase 3 — Reviews & Owner Responses (complete).** Customers can review a
-spa (one active review each, editable), rate it by category, mark other
-reviews helpful, and report policy-violating content; spa owners can reply
-to reviews on their own listing; moderators can hide/restore reported
-reviews with a logged reason. See
+**Phase 4 — Customer Community & Credibility (complete).** Customers have
+public profiles with real stats and an 11-badge catalog awarded
+automatically from review activity; they can follow/unfollow each other
+and manage their profile settings. A site-wide nav bar now ties the pages
+from every phase together. See
 [docs/development-roadmap.md](./docs/development-roadmap.md) for the full
-phase plan and current known limitations; Phase 4 (Customer Community &
-Credibility) is next.
+phase plan and current known limitations; Phase 5 (Spa Owner Portal) is
+next.
 
 ## Planning Documents
 
@@ -87,8 +87,9 @@ npm install
      order (0001: profiles/roles/RLS; 0002: RLS recursion fix; 0003: spa
      directory schema/RLS/storage; 0004: spa-owner signup trigger; 0005:
      search RPC; 0006: reviews/replies/votes/reports/moderation/
-     notifications). Without CLI access, paste each file into the Supabase
-     SQL Editor in filename order instead.
+     notifications; 0007: follows/badges/credibility scoring). Without CLI
+     access, paste each file into the Supabase SQL Editor in filename order
+     instead.
    - Bootstrap your first superadmin locally by signing up a normal account
      through the app, then running the SQL noted in `supabase/seed.sql`.
    - Optionally run `supabase/seed.sql`'s fictional spa listings (clearly

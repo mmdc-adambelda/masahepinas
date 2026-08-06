@@ -1,47 +1,80 @@
 import { useEffect, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { colors, radius, spacing, typography } from '@masahepinas/ui/tokens';
-import { useAuth } from '@/lib/auth-context';
-import { supabase } from '@/lib/supabase';
 import {
   getBadges,
+  getProfile,
   getProfileStats,
+  isFollowing,
+  toggleFollow,
   type BadgeSummary,
   type ProfileStats,
+  type ProfileSummary,
 } from '@/lib/community';
+import { useAuth } from '@/lib/auth-context';
 
-export default function ProfileScreen() {
+export default function PublicProfileScreen() {
+  const { userId } = useLocalSearchParams<{ userId: string }>();
   const { session } = useAuth();
+  const [profile, setProfile] = useState<ProfileSummary | null>(null);
   const [stats, setStats] = useState<ProfileStats | null>(null);
   const [badges, setBadges] = useState<BadgeSummary[]>([]);
+  const [following, setFollowing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!session) return;
-    getProfileStats(session.userId).then(setStats);
-    getBadges(session.userId).then(setBadges);
-  }, [session]);
+    if (!userId) return;
+    Promise.all([
+      getProfile(userId),
+      getProfileStats(userId),
+      getBadges(userId),
+      session ? isFollowing(session.userId, userId) : Promise.resolve(false),
+    ]).then(([p, s, b, f]) => {
+      setProfile(p);
+      setStats(s);
+      setBadges(b);
+      setFollowing(f);
+      setIsLoading(false);
+    });
+  }, [userId, session]);
 
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    router.replace('/(auth)/sign-in');
+  if (isLoading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={colors.accentGreen} />
+      </View>
+    );
   }
+
+  if (!profile) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.title}>Profile not found</Text>
+      </View>
+    );
+  }
+
+  const isSelf = session?.userId === userId;
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
     >
-      <Text style={styles.title}>{session?.profile?.displayName ?? 'Your profile'}</Text>
-      <Text style={styles.subtitle}>{session?.email}</Text>
-
-      <View style={styles.rolesRow}>
-        {(session?.roles.length ? session.roles : ['customer']).map((role) => (
-          <View key={role} style={styles.rolePill}>
-            <Text style={styles.roleText}>{role.replace('_', ' ')}</Text>
-          </View>
-        ))}
-      </View>
+      <Stack.Screen options={{ title: profile.displayName, headerShown: true }} />
+      <Text style={styles.title}>{profile.displayName}</Text>
+      {profile.bio ? <Text style={styles.body}>{profile.bio}</Text> : null}
+      <Text style={styles.body}>
+        {[profile.city, profile.province].filter(Boolean).join(', ')}
+      </Text>
 
       {stats ? (
         <View style={styles.statsGrid}>
@@ -53,26 +86,23 @@ export default function ProfileScreen() {
       ) : null}
 
       {badges.length > 0 ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Badges</Text>
-          <View style={styles.badgeRow}>
-            {badges.map((badge) => (
-              <View key={badge.id} style={styles.badgePill}>
-                <Text style={styles.badgeText}>{badge.name}</Text>
-              </View>
-            ))}
-          </View>
+        <View style={styles.badgeRow}>
+          {badges.map((badge) => (
+            <View key={badge.id} style={styles.badgePill}>
+              <Text style={styles.badgeText}>{badge.name}</Text>
+            </View>
+          ))}
         </View>
       ) : null}
 
-      <Text style={styles.note}>
-        Saved spas and settings live in Explore/Saved for now — a dedicated settings
-        screen lands in a later update.
-      </Text>
-
-      <Pressable style={styles.button} onPress={handleSignOut}>
-        <Text style={styles.buttonText}>Sign out</Text>
-      </Pressable>
+      {!isSelf && session ? (
+        <Pressable
+          style={styles.button}
+          onPress={async () => setFollowing(await toggleFollow(session.userId, userId))}
+        >
+          <Text style={styles.buttonText}>{following ? 'Following' : 'Follow'}</Text>
+        </Pressable>
+      ) : null}
     </ScrollView>
   );
 }
@@ -87,33 +117,21 @@ function StatBox({ label, value }: { label: string; value: number }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1, backgroundColor: colors.backgroundMain },
+  center: {
     flex: 1,
     backgroundColor: colors.backgroundMain,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     color: colors.textMain,
     fontSize: typography.size.xl,
     fontWeight: '600',
   },
-  subtitle: {
+  body: {
     color: colors.textSecondary,
     fontSize: typography.size.sm,
-  },
-  rolesRow: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  rolePill: {
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-  },
-  roleText: {
-    color: colors.accentGreen,
-    fontSize: typography.size.xs,
-    textTransform: 'capitalize',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -136,14 +154,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: typography.size.xs,
   },
-  section: {
-    gap: spacing.xs,
-  },
-  sectionTitle: {
-    color: colors.textMain,
-    fontSize: typography.size.base,
-    fontWeight: '600',
-  },
   badgeRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -160,22 +170,14 @@ const styles = StyleSheet.create({
     color: colors.accentGreen,
     fontSize: typography.size.xs,
   },
-  note: {
-    color: colors.textSecondary,
-    fontSize: typography.size.xs,
-  },
   button: {
-    backgroundColor: 'transparent',
+    backgroundColor: colors.primaryGreen,
     borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.error,
-    paddingVertical: spacing.sm + 4,
+    paddingVertical: spacing.sm,
     alignItems: 'center',
-    marginTop: spacing.lg,
   },
   buttonText: {
-    color: colors.error,
+    color: colors.backgroundMain,
     fontWeight: '600',
-    fontSize: typography.size.base,
   },
 });

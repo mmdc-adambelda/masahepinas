@@ -66,14 +66,12 @@ export async function submitReview(
       .eq('id', existingId);
     return { error: error ? 'Could not update your review.' : null };
   }
-  const { error } = await supabase
-    .from('reviews')
-    .insert({
-      business_id: businessId,
-      customer_id: customerId,
-      overall_rating: overallRating,
-      body,
-    });
+  const { error } = await supabase.from('reviews').insert({
+    business_id: businessId,
+    customer_id: customerId,
+    overall_rating: overallRating,
+    body,
+  });
   return {
     error: error
       ? 'Could not submit your review. You may already have one, or this may be your own business.'

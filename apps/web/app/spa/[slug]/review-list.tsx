@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { Review } from '@masahepinas/types';
 import { formatRelativeDate } from '@masahepinas/utils';
 import { ReportButton } from '@/components/ReportButton';
@@ -28,7 +29,12 @@ export function ReviewList({
         <article key={review.id} className="card space-y-2">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-foreground">{review.customerDisplayName}</p>
+              <Link
+                href={`/u/${review.customerId}`}
+                className="font-medium text-foreground hover:underline"
+              >
+                {review.customerDisplayName}
+              </Link>
               <p className="text-xs text-foreground-secondary">
                 {formatRelativeDate(review.createdAt)}
                 {review.wasEdited ? ' · edited' : ''}

@@ -511,6 +511,82 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['notifications']['Insert']>;
         Relationships: [];
       };
+      user_follows: {
+        Row: {
+          id: string;
+          follower_id: string;
+          followee_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          follower_id: string;
+          followee_id: string;
+        };
+        Update: Partial<Database['public']['Tables']['user_follows']['Insert']>;
+        Relationships: [];
+      };
+      badges: {
+        Row: {
+          id: string;
+          slug: string;
+          name: string;
+          description: string | null;
+          tier: number | null;
+          icon: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          name: string;
+          description?: string | null;
+          tier?: number | null;
+          icon?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['badges']['Insert']>;
+        Relationships: [];
+      };
+      user_badges: {
+        Row: {
+          id: string;
+          user_id: string;
+          badge_id: string;
+          awarded_at: string;
+          awarded_reason: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          badge_id: string;
+          awarded_reason?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['user_badges']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'user_badges_badge_id_fkey';
+            columns: ['badge_id'];
+            isOneToOne: false;
+            referencedRelation: 'badges';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      user_credibility_scores: {
+        Row: {
+          user_id: string;
+          score: number;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          score?: number;
+        };
+        Update: Partial<
+          Database['public']['Tables']['user_credibility_scores']['Insert']
+        >;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

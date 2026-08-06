@@ -115,15 +115,45 @@ to non-staff); a moderator can hide a reported review from
   moderation queue — those stay web-only for now, consistent with owner/
   moderator tooling generally being desktop-first in this MVP.
 
-## Phase 4 — Customer Community & Credibility
+## Phase 4 — Customer Community & Credibility — ✅ Complete (2026-08-06)
 
 Public profiles, follow/unfollow, followers/following lists, credibility
 score computation (server-side, formula not exposed), badge catalog +
 award logic, verified-review indicator, suspicious-activity flags feeding
 the moderator queue.
-**Acceptance:** follow graph works, badges cannot be self-assigned, badge
-awarding is a service-role/system operation only, private profile fields
-stay protected under RLS.
+**Acceptance:** follow graph works (`/u/[userId]`, self-follow blocked by a
+DB check constraint); badges cannot be self-assigned — `user_badges` has
+no client-facing insert policy at all, the only write path is the
+`award_badge_if_missing`/`evaluate_and_award_badges` `SECURITY DEFINER`
+functions triggered by review/helpful-vote events; private profile fields
+(the credibility score itself) stay protected — moved to a dedicated
+`user_credibility_scores` table with a self-or-staff-only RLS policy,
+specifically because RLS is row-level, not column-level, so a score column
+sitting on the publicly-readable `profiles` row would have been readable
+by anyone regardless of app-level query shaping.
+**Delivered:** 11-badge catalog (5 review-count tiers + Five Helpful
+Reviews, Detailed Reviewer, Community Contributor, and 3
+province-specific Explorer badges), public profile pages with stats
+(review count, verified count, helpful votes received, cities reviewed,
+followers/following), followers/following list pages, a profile settings
+page (display name/bio/city/province/private toggle), and a minimal
+site-wide nav header so Phase 1-4 pages are actually reachable from each
+other. Mobile: Profile tab shows real stats/badges; a public profile
+screen with follow is reachable from any review author's name.
+**Deferred to later phases (tracked, not dropped):**
+
+- The full automated activity feed ("reviews from people you follow") is
+  Post-MVP backlog, per the original scope call in Phase 0.
+- Suspicious-activity flags / anti-fraud detection beyond the credibility
+  score formula itself are Post-MVP ("Advanced/ML-based anti-fraud
+  scoring") — Phase 4 computes a legitimate-activity-based score but does
+  not yet implement duplicate-account or vote-manipulation detection.
+- Verified-review badge criteria reference `is_verified_visit`, which
+  nothing sets yet (verified-visit methods are Phase 5+, per Phase 3's
+  notes) — those badge paths are wired but currently unreachable.
+- Mobile has no dedicated settings screen yet (web-only); mobile's
+  Community tab is still a placeholder — profile/follow works via the
+  Profile tab and per-review author links instead.
 
 ## Phase 5 — Spa Owner Portal
 
