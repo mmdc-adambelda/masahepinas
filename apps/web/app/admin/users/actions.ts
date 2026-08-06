@@ -39,15 +39,29 @@ export async function setUserStatus(
     .eq('id', userId);
   if (error) return { error: 'Could not update this account. Please try again.' };
 
-  await supabase.from('moderation_actions').insert({
-    moderator_id: session.userId,
-    action_type: newStatus === 'suspended' ? 'suspend_account' : 'reinstate_account',
-    target_type: 'profile',
-    target_id: userId,
-    reason: parsed.data.reason,
-    previous_state: before ?? null,
-    new_state: { status: newStatus },
-  });
+  const { data: action } = await supabase
+    .from('moderation_actions')
+    .insert({
+      moderator_id: session.userId,
+      action_type: newStatus === 'suspended' ? 'suspend_account' : 'reinstate_account',
+      target_type: 'profile',
+      target_id: userId,
+      reason: parsed.data.reason,
+      previous_state: before ?? null,
+      new_state: { status: newStatus },
+    })
+    .select('id')
+    .single();
+
+  if (newStatus === 'suspended' && action) {
+    await supabase.from('notifications').insert({
+      user_id: userId,
+      type: 'account_suspended',
+      title: 'Your account was suspended',
+      body: `Reason: ${parsed.data.reason}. You can appeal this decision.`,
+      link_url: `/appeals/new/${action.id}`,
+    });
+  }
 
   revalidatePath('/admin/users');
   return { error: null };

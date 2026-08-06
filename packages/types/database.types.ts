@@ -148,6 +148,10 @@ export interface Database {
           price_range?: PriceRange | null;
           gender_availability?: GenderAvailability;
           status?: ListingStatus;
+          is_premium?: boolean;
+          is_recommended?: boolean;
+          recommended_by?: string | null;
+          recommended_at?: string | null;
         };
         Update: Partial<Database['public']['Tables']['spa_businesses']['Insert']>;
         Relationships: [
@@ -774,6 +778,71 @@ export interface Database {
           },
         ];
       };
+      recommendation_records: {
+        Row: {
+          id: string;
+          business_id: string;
+          decided_by: string;
+          is_recommended: boolean;
+          criteria_notes: string | null;
+          decided_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          decided_by: string;
+          is_recommended: boolean;
+          criteria_notes?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['recommendation_records']['Insert']>;
+        Relationships: [];
+      };
+      featured_placements: {
+        Row: {
+          id: string;
+          business_id: string;
+          placement_key: string;
+          starts_at: string | null;
+          ends_at: string | null;
+          created_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          placement_key: string;
+          starts_at?: string | null;
+          ends_at?: string | null;
+          created_by: string;
+        };
+        Update: Partial<Database['public']['Tables']['featured_placements']['Insert']>;
+        Relationships: [];
+      };
+      appeals: {
+        Row: {
+          id: string;
+          moderation_action_id: string;
+          submitted_by: string;
+          message: string;
+          status: 'open' | 'upheld' | 'overturned';
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          resolution_notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          moderation_action_id: string;
+          submitted_by: string;
+          message: string;
+          status?: 'open' | 'upheld' | 'overturned';
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          resolution_notes?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['appeals']['Insert']>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -853,6 +922,7 @@ export interface Database {
       moderation_action_type: ModerationActionType;
       claim_status: ClaimStatus;
       subscription_status: SubscriptionStatus;
+      appeal_status: 'open' | 'upheld' | 'overturned';
     };
     CompositeTypes: Record<string, never>;
   };

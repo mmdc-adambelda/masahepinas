@@ -1,6 +1,6 @@
 # Masahe Pinas — Development Roadmap
 
-Status: living document · Last updated: 2026-08-05
+Status: living document · Last updated: 2026-08-06
 
 Phases are executed in order. Each phase ends with the phase summary format
 defined in the master brief (features completed, files created/modified,
@@ -247,15 +247,70 @@ handling, invoice/receipt records.
   need `getPlatformStats`' MRR calc to sum actual plan prices instead of
   assuming ₱500 flat.
 
-## Phase 7 — Moderation & Administration
+## Phase 7 — Moderation & Administration — ✅ Complete (2026-08-06)
 
-Moderator dashboard (all queues from
-[moderation-policy.md](./moderation-policy.md)), superadmin dashboard
-(platform metrics, user/listing/moderator/badge/service/location management,
-recommendation + featured-placement controls, audit log viewer, appeals).
-**Acceptance:** moderator/superadmin permission boundaries hold under RLS
-testing, every sensitive action is audited, recommendation status is
-provably independent of premium billing status, all actions require reasons.
+Superadmin-only "recommended" listing curation (independent of Premium),
+featured-placement scheduling, badge catalog management, service-category
+catalog management, a platform-wide audit log viewer, and a full appeals
+workflow (user submits an appeal on any moderation action against them →
+staff overturn/uphold → overturning automatically reverses the underlying
+action).
+**Delivered:**
+
+- `recommendation_records` (append-only history) + `spa_businesses
+.is_recommended/recommended_by/recommended_at` — set only via
+  `/admin/recommendations`, which requires `requireSuperadmin()`, not just
+  staff. The `enforce_business_update_guard` trigger was tightened so
+  these three columns specifically require `is_superadmin()`, while other
+  protected columns (`is_premium`, `status`, etc.) still only require
+  `is_staff()`. This keeps "Recommended" provably separate from Premium:
+  Premium is set by the billing trigger from Phase 6 and is never
+  superadmin-editable; Recommended is set only by a superadmin action and
+  is never linked to a `subscriptions` row.
+- `featured_placements` (slot key + business + start/end window),
+  managed at `/admin/featured` with separate insert/update/delete RLS
+  policies (a combined policy would have let one superadmin's `with
+check` block another superadmin's edits).
+- `/admin/badges` and `/admin/services` — superadmin CRUD over the
+  `badges` and `service_categories` catalogs. Badges remain
+  system-awarded only (no manual "grant to user" control, by design —
+  see [moderation-policy.md](./moderation-policy.md)).
+- `/admin/audit-logs` — read-only, superadmin-only viewer over
+  `audit_logs` (most recent 100 entries, actor + action + entity).
+- `appeals` table + `/appeals/new/[actionId]` (any authenticated user
+  appeals a moderation action taken against their own content/account/
+  listing) + `/admin/appeals` (staff queue). Overturning an appeal
+  auto-reverses the original action (`hide_content` → review restored to
+  `visible`, `suspend_account` → profile restored to `active`, listing
+  rejection/suspension → `spa_business` restored to `verified`) and logs
+  a new `moderation_actions` row for the reversal. Hiding a review,
+  changing a listing's status away from `verified`, and suspending a user
+  now all notify the affected person with a direct link to file an appeal.
+  **Acceptance:**
+- Moderator/superadmin permission boundaries hold under RLS: `is_staff()`
+  gates most `/admin/*` routes via `requireRole('moderator')`;
+  `is_superadmin()` strictly gates recommendations, featured placements,
+  badges, service categories, and audit logs via `requireSuperadmin()`.
+- Every sensitive action is audited — `moderation_actions` rows for every
+  hide/suspend/reject/reinstate/restore/approve, `recommendation_records`
+  for every recommend/un-recommend, and generic `audit_logs` entries for
+  platform-management actions.
+- Recommendation status is provably independent of premium billing status
+  (see trigger/RLS reasoning above — no code path lets a `subscriptions`
+  change touch `is_recommended`, and no code path lets `/admin/recommendations`
+  touch `is_premium`).
+- All moderation actions already required reasons/notes as of Phase 3
+  (`moderation_actions.reason`); this phase extends that to
+  recommendation decisions (`recommendation_records.notes`) and appeal
+  resolutions (`appeals.resolution_notes`).
+  **Deferred to later phases (tracked, not dropped):**
+- No automated duplicate-listing detection or "suspicious user" fraud
+  heuristics — flagged for Post-MVP; would need a dedicated scoring job.
+- No controlled Philippine locations table (province/city are still free
+  text validated client-side) — Post-MVP, needs a canonical PSGC dataset.
+- Audit log viewer is read-only with no filtering/search yet — sufficient
+  for MVP scale, revisit if the table grows large enough to need
+  pagination/filters.
 
 ## Phase 8 — QA & Launch Preparation
 

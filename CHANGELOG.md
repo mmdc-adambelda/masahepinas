@@ -5,6 +5,55 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Phase 7 — Moderation & Administration (2026-08-06)
+
+#### Added
+
+- `supabase/migrations/0010_moderation_admin.sql`: `recommendation_records`
+  (append-only), `featured_placements`, `appeal_status` enum, `appeals`;
+  redefines `enforce_business_update_guard()` so `is_recommended`/
+  `recommended_by`/`recommended_at` specifically require `is_superadmin()`
+  (other protected columns still only require `is_staff()`); RLS for all
+  three new tables, including separate insert/update/delete policies on
+  `featured_placements` (a combined `for all` policy's `with check` would
+  have blocked one superadmin from editing another's placement).
+- `packages/types/moderation.ts`: `RecommendationRecord`,
+  `FeaturedPlacement`, `AppealStatus`, `Appeal`, `AuditLogEntry`.
+- **Web**: `/admin/recommendations` (superadmin toggles "Recommended" with
+  required criteria notes), `/admin/featured` (add/remove featured
+  placements by slug + placement key), `/admin/badges` (badge catalog
+  CRUD — no manual award-to-user control, by design), `/admin/services`
+  (service-category catalog CRUD), `/admin/audit-logs` (read-only
+  platform audit trail viewer), `/admin/appeals` (staff queue,
+  overturn/uphold), `/appeals/new/[actionId]` + `/appeals/new/submitted`
+  (any user appeals a moderation action taken against them).
+- Hiding a reported review, changing a listing's status away from
+  `verified`, and suspending a user now each insert a notification
+  linking the affected person to `/appeals/new/[actionId]`.
+
+#### Security
+
+- "Recommended" is provably independent of Premium: `is_recommended` can
+  only change via a superadmin-gated server action writing to
+  `recommendation_records`; `is_premium` can only change via the Phase 6
+  billing trigger. Neither code path touches the other's column.
+- Appeal submission forms never query the staff-only `moderation_actions`
+  table directly (RLS would block it for the appellant anyway) — the
+  reason is conveyed via the notification sent at moderation-action time.
+- Overturning an appeal auto-reverses the original action (restore
+  review to `visible`, reinstate profile to `active`, re-verify
+  `spa_business`) and logs a new `moderation_actions` row for the
+  reversal, preserving a full audit trail in both directions.
+
+#### Known Limitations / Deferred
+
+- No automated duplicate-listing detection or "suspicious user" fraud
+  heuristics (Post-MVP).
+- No controlled Philippine locations table — province/city remain free
+  text (Post-MVP, needs a canonical PSGC dataset).
+- Audit log viewer has no filtering/search/pagination yet (sufficient at
+  MVP scale).
+
 ### Phase 6 — Premium Subscription (2026-08-06)
 
 #### Added

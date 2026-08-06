@@ -7,14 +7,18 @@ shipped as a shared-backend web app + mobile app.
 
 ## Project Status
 
-**Phase 6 — Premium Subscription (complete).** Spa owners can upgrade to
-Masahe Pinas Premium (₱500/month, test-mode checkout — no card data
-collected) from `/owner/billing`, see billing history, and cancel anytime
-without losing their listing. Premium status is fully server-derived and
-always visibly labelled, never an implied editorial endorsement. See
+**Phase 7 — Moderation & Administration (complete).** Superadmins can curate
+an editorial "Recommended" list (`/admin/recommendations`, provably
+independent of Premium billing status), schedule featured placements
+(`/admin/featured`), manage the badge and service-category catalogs
+(`/admin/badges`, `/admin/services`), review the platform audit trail
+(`/admin/audit-logs`), and resolve user appeals of moderation decisions
+(`/admin/appeals`) — with overturned appeals automatically reversing the
+original action. Any user can appeal a moderation action taken against
+their content, account, or listing from a link in their notification. See
 [docs/development-roadmap.md](./docs/development-roadmap.md) for the full
-phase plan and current known limitations; Phase 7 (Moderation &
-Administration) is next.
+phase plan and current known limitations; Phase 8 (QA & Launch Preparation)
+is next.
 
 ## Planning Documents
 
@@ -89,8 +93,10 @@ npm install
      search RPC; 0006: reviews/replies/votes/reports/moderation/
      notifications; 0007: follows/badges/credibility scoring; 0008: owner
      analytics/verification/business claims/admin audit log; 0009: premium
-     subscription plans/checkout/billing). Without CLI access, paste each
-     file into the Supabase SQL Editor in filename order instead.
+     subscription plans/checkout/billing; 0010: recommendations/featured
+     placements/appeals/badge+service catalog management). Without CLI
+     access, paste each file into the Supabase SQL Editor in filename
+     order instead.
    - Bootstrap your first superadmin locally by signing up a normal account
      through the app, then running the SQL noted in `supabase/seed.sql`.
    - Optionally run `supabase/seed.sql`'s fictional spa listings (clearly

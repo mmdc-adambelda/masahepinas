@@ -5,4 +5,5 @@ export * from './review';
 export * from './community';
 export * from './owner';
 export * from './billing';
+export * from './moderation';
 export type { Database } from './database.types';

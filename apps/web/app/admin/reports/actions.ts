@@ -35,7 +35,7 @@ export async function hideReportedReview(
 
   const { data: before } = await supabase
     .from('reviews')
-    .select('moderation_status')
+    .select('moderation_status, customer_id')
     .eq('id', reviewId)
     .maybeSingle();
 
@@ -45,17 +45,31 @@ export async function hideReportedReview(
     .eq('id', reviewId);
   if (updateError) return { error: 'Could not hide the review. Please try again.' };
 
-  await supabase.from('moderation_actions').insert({
-    moderator_id: session.userId,
-    action_type: 'hide_content',
-    target_type: 'review',
-    target_id: reviewId,
-    reason: parsed.data.reason,
-    notes: parsed.data.notes || null,
-    previous_state: before ?? null,
-    new_state: { moderation_status: 'hidden' },
-    report_id: reportId,
-  });
+  const { data: action } = await supabase
+    .from('moderation_actions')
+    .insert({
+      moderator_id: session.userId,
+      action_type: 'hide_content',
+      target_type: 'review',
+      target_id: reviewId,
+      reason: parsed.data.reason,
+      notes: parsed.data.notes || null,
+      previous_state: before ? { moderation_status: before.moderation_status } : null,
+      new_state: { moderation_status: 'hidden' },
+      report_id: reportId,
+    })
+    .select('id')
+    .single();
+
+  if (before?.customer_id && action) {
+    await supabase.from('notifications').insert({
+      user_id: before.customer_id,
+      type: 'review_hidden',
+      title: 'Your review was hidden',
+      body: `Reason: ${parsed.data.reason}. You can appeal this decision.`,
+      link_url: `/appeals/new/${action.id}`,
+    });
+  }
 
   await supabase
     .from('content_reports')
