@@ -201,19 +201,51 @@ links — not placeholders), verification documents stay private (dedicated
 - No mobile owner dashboard or admin surface — consistent with Phase 3/4,
   owner/moderator/superadmin tooling stays web-only for this MVP.
 
-## Phase 6 — Premium Subscription
+## Phase 6 — Premium Subscription — ✅ Complete (2026-08-06)
 
-`subscription_plans` seed (₱500/month Premium), `PaymentProvider` interface
+`subscription_plans` seed (₱500/month Premium), a provider-agnostic
+test-mode checkout/cancel flow, subscription status lifecycle (trial/
+active/past_due/cancelled/expired), premium badge + clearly labelled
+placement, premium analytics, cancellation flow, idempotent payment-event
+handling, invoice/receipt records.
+**Acceptance:**
 
-- `TestModeProvider`, checkout flow, subscription status lifecycle
-  (trial/active/past_due/cancelled/expired), premium badge + clearly labelled
-  placement, premium analytics, cancellation flow, idempotent payment-event
-  handling, invoice/receipt records.
-  **Acceptance:** free listings stay fully usable, premium activates only on
-  confirmed payment event, premium is always visibly labelled (never disguised
-  as editorial), cancellation preserves the business record, expiry
-  automatically strips premium benefits (scheduled job), duplicate webhook
-  events are no-ops.
+- Free listings stay fully usable — nothing about search, listing pages,
+  or submission requires Premium.
+- Premium activates only on a confirmed payment event: `is_premium` is
+  never client-settable (no RLS write policy on `subscriptions`/
+  `spa_businesses.is_premium` for owners) — it's derived by a DB trigger
+  reacting to a `subscriptions.status` change, which itself only happens
+  through the `start_premium_subscription` RPC (test-mode "payment") or a
+  future real webhook handler.
+- Premium is always visibly labelled — the "Premium" badge added in Phase
+  2 (`ListingCard`, `/spa/[slug]`) and the explicit non-editorial framing
+  on `/premium` and `/owner/billing` ("Premium ... never presented as an
+  independent editorial recommendation") satisfy this; search ordering
+  (`search_spa_businesses`, Phase 2) already ranks `is_premium desc`
+  first, so placement matches the label.
+- Cancellation preserves the business record — `cancel_premium_subscription`
+  only touches `subscriptions`/`payment_events`, never `spa_businesses`.
+- Expiry automatically strips premium benefits — `expire_due_subscriptions`
+  flips lapsed subscriptions to `expired`, and the same sync trigger turns
+  off `is_premium`; scheduled hourly via `pg_cron` if enabled on the
+  project (wrapped so migration succeeds either way), with a manual
+  "Run expiration sweep" button on `/admin` as a fallback.
+- Duplicate webhook/payment events are no-ops — `payment_events
+.provider_event_id` is unique with `on conflict do nothing` in both RPCs.
+  **Delivered:** `/premium` (public plan page), `/owner/billing` (current
+  plan/status/period end, upgrade/cancel, billing history from
+  `payment_events`), superadmin `/admin` now shows active-subscription count
+  and MRR.
+  **Deferred to later phases (tracked, not dropped):**
+- No real payment provider integration — still test-mode only, per the
+  original Phase 0 architecture call ("simulated or test-mode billing
+  workflow" until a PH-compliant provider is selected).
+- No mobile billing UI (web-only, consistent with owner/admin tooling in
+  Phases 3-5).
+- Only one plan tier exists; multi-plan pricing (if ever needed) would
+  need `getPlatformStats`' MRR calc to sum actual plan prices instead of
+  assuming ₱500 flat.
 
 ## Phase 7 — Moderation & Administration
 

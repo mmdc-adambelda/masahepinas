@@ -12,6 +12,8 @@ export interface PlatformStats {
   openReports: number;
   pendingClaims: number;
   reviewCount: number;
+  activeSubscriptions: number;
+  monthlyRecurringRevenuePhp: number;
 }
 
 export async function getPlatformStats(): Promise<PlatformStats> {
@@ -26,6 +28,7 @@ export async function getPlatformStats(): Promise<PlatformStats> {
     { count: openReports },
     { count: pendingClaims },
     { count: reviewCount },
+    { count: activeSubscriptions },
   ] = await Promise.all([
     supabase
       .from('user_roles')
@@ -59,7 +62,16 @@ export async function getPlatformStats(): Promise<PlatformStats> {
       .from('reviews')
       .select('id', { count: 'exact', head: true })
       .eq('moderation_status', 'visible'),
+    supabase
+      .from('subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .in('status', ['trial', 'active']),
   ]);
+
+  const active = activeSubscriptions ?? 0;
+  // MVP has exactly one paid plan (₱500/month); once multiple plans exist
+  // this should sum each active subscription's actual plan price instead.
+  const monthlyRecurringRevenuePhp = active * 500;
 
   return {
     totalCustomers: totalCustomers ?? 0,
@@ -70,6 +82,8 @@ export async function getPlatformStats(): Promise<PlatformStats> {
     openReports: openReports ?? 0,
     pendingClaims: pendingClaims ?? 0,
     reviewCount: reviewCount ?? 0,
+    activeSubscriptions: active,
+    monthlyRecurringRevenuePhp,
   };
 }
 

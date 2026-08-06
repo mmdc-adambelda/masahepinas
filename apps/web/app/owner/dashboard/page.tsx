@@ -63,6 +63,9 @@ export default async function OwnerDashboardPage() {
         <Link href="/owner/reviews" className="btn-secondary">
           Manage reviews
         </Link>
+        <Link href="/owner/billing" className="btn-secondary">
+          Subscription
+        </Link>
         <Link href={`/spa/${business.slug}`} className="btn-secondary">
           View public listing
         </Link>

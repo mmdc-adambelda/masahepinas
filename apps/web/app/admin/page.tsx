@@ -1,6 +1,8 @@
 import Link from 'next/link';
+import { formatPhp } from '@masahepinas/utils';
 import { requireRole } from '@/lib/auth';
 import { getPlatformStats } from '@/lib/admin';
+import { ExpireSubscriptionsButton } from './expire-subscriptions-button';
 
 export const metadata = { title: 'Admin dashboard' };
 
@@ -33,6 +35,18 @@ export default async function AdminHomePage() {
           highlight={stats.pendingClaims > 0}
         />
         <StatCard label="Reviews" value={stats.reviewCount} />
+        <StatCard label="Active subscriptions" value={stats.activeSubscriptions} />
+        <StatCard label="MRR" value={formatPhp(stats.monthlyRecurringRevenuePhp)} />
+      </div>
+
+      <div className="card space-y-2">
+        <h2 className="font-medium text-foreground">Subscription expiration sweep</h2>
+        <p className="text-xs text-foreground-secondary">
+          Flips lapsed subscriptions to &quot;expired&quot; (which automatically removes
+          Premium benefits). Runs hourly via pg_cron if enabled on this project; otherwise
+          run it manually here.
+        </p>
+        <ExpireSubscriptionsButton />
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -72,7 +86,7 @@ function StatCard({
   highlight,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   highlight?: boolean;
 }) {
   return (

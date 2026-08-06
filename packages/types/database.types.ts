@@ -26,6 +26,7 @@ import type {
   ReportStatus,
   ReportTargetType,
   ReviewModerationStatus,
+  SubscriptionStatus,
 } from './enums';
 
 export interface Database {
@@ -688,9 +689,106 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['audit_logs']['Insert']>;
         Relationships: [];
       };
+      subscription_plans: {
+        Row: {
+          id: string;
+          slug: string;
+          name: string;
+          price_php: number;
+          billing_cycle: string;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          name: string;
+          price_php: number;
+          billing_cycle?: string;
+          is_active?: boolean;
+        };
+        Update: Partial<Database['public']['Tables']['subscription_plans']['Insert']>;
+        Relationships: [];
+      };
+      subscriptions: {
+        Row: {
+          id: string;
+          business_id: string;
+          plan_id: string;
+          status: SubscriptionStatus;
+          provider_name: string;
+          provider_reference_id: string | null;
+          current_period_start: string | null;
+          current_period_end: string | null;
+          cancel_at_period_end: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          plan_id: string;
+          status?: SubscriptionStatus;
+          provider_name?: string;
+          provider_reference_id?: string | null;
+          current_period_start?: string | null;
+          current_period_end?: string | null;
+          cancel_at_period_end?: boolean;
+        };
+        Update: Partial<Database['public']['Tables']['subscriptions']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'subscriptions_business_id_fkey';
+            columns: ['business_id'];
+            isOneToOne: true;
+            referencedRelation: 'spa_businesses';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      payment_events: {
+        Row: {
+          id: string;
+          subscription_id: string;
+          provider_event_id: string;
+          event_type: string;
+          raw_payload: unknown;
+          processed_at: string;
+        };
+        Insert: {
+          id?: string;
+          subscription_id: string;
+          provider_event_id: string;
+          event_type: string;
+          raw_payload?: unknown;
+        };
+        Update: Partial<Database['public']['Tables']['payment_events']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'payment_events_subscription_id_fkey';
+            columns: ['subscription_id'];
+            isOneToOne: false;
+            referencedRelation: 'subscriptions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
+      start_premium_subscription: {
+        Args: { target_business_id: string };
+        Returns: undefined;
+      };
+      cancel_premium_subscription: {
+        Args: { target_business_id: string };
+        Returns: undefined;
+      };
+      expire_due_subscriptions: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
       approve_business_claim: {
         Args: { claim_id: string; reason: string };
         Returns: undefined;
@@ -754,6 +852,7 @@ export interface Database {
       report_reason: ReportReason;
       moderation_action_type: ModerationActionType;
       claim_status: ClaimStatus;
+      subscription_status: SubscriptionStatus;
     };
     CompositeTypes: Record<string, never>;
   };

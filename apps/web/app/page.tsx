@@ -85,8 +85,11 @@ export default async function HomePage() {
             Own a spa or wellness business?
           </h2>
           <p className="mt-1 text-sm text-foreground-secondary">
-            List your spa for free. Upgrade to {PREMIUM_PLAN.name} for{' '}
-            {formatPhp(PREMIUM_PLAN.pricePhp)}/month for extra visibility.
+            List your spa for free. Upgrade to{' '}
+            <Link href="/premium" className="underline">
+              {PREMIUM_PLAN.name}
+            </Link>{' '}
+            for {formatPhp(PREMIUM_PLAN.pricePhp)}/month for extra visibility.
           </p>
         </div>
         <Link href="/sign-up/spa-owner" className="btn-primary shrink-0">

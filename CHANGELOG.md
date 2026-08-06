@@ -5,6 +5,44 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Phase 6 — Premium Subscription (2026-08-06)
+
+#### Added
+
+- `supabase/migrations/0009_premium_subscription.sql`: `subscription_plans`
+  (seeded with the ₱500/month `premium-monthly` plan), `subscriptions`,
+  `payment_events`; `start_premium_subscription`/`cancel_premium_subscription`
+  `SECURITY DEFINER` RPCs (test-mode — no card data collected or stored
+  anywhere); a trigger syncing `spa_businesses.is_premium` from
+  subscription status automatically; `expire_due_subscriptions` +
+  a best-effort `pg_cron` hourly schedule (falls back to a manual
+  admin-triggered sweep if the extension isn't enabled on this project).
+- `packages/types/billing.ts`.
+- **Web**: `/premium` (public plan page — pricing, benefits, explicit
+  "never presented as editorial" framing), `/owner/billing` (status,
+  upgrade/cancel, billing history), an expiration-sweep control and
+  active-subscriptions/MRR stats on `/admin`.
+
+#### Security
+
+- `is_premium` remains fully derived, never client-settable: the only
+  path to `true` is a `subscriptions.status` transition to `trial`/
+  `active`, which is itself gated by the RPCs' internal
+  `owns_business`/`is_staff` check — mirrors the Phase 2 pattern for
+  premium/recommended protection.
+- Payment events are idempotent by a unique `provider_event_id` constraint
+  with `on conflict do nothing`, so a duplicated/replayed event is a
+  guaranteed no-op.
+- No payment/card details are collected or persisted anywhere — test-mode
+  checkout is a single authenticated RPC call with no payment form.
+
+#### Known Limitations / Deferred
+
+- Still test-mode only; no real PH payment provider integration (per the
+  original Phase 0 architecture decision).
+- No mobile billing UI (web-only, consistent with prior phases' owner/
+  admin tooling).
+
 ### Phase 5 — Spa Owner Portal + Superadmin Admin Dashboard (2026-08-06)
 
 Scope expanded on request to pull the superadmin admin dashboard forward

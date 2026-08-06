@@ -7,15 +7,14 @@ shipped as a shared-backend web app + mobile app.
 
 ## Project Status
 
-**Phase 5 — Spa Owner Portal + Superadmin Admin Dashboard (complete).**
-Owners get a real dashboard (`/owner/dashboard`) with analytics from actual
-tracked events, business claiming, and private verification-document
-upload. Superadmins/moderators get a working in-app admin dashboard
-(`/admin`) — user management, listing verification (accepting new business
-registrations), and business claim review — pulled forward from Phase 7 on
-request. See [docs/development-roadmap.md](./docs/development-roadmap.md)
-for the full phase plan and current known limitations; Phase 6 (Premium
-Subscription) is next.
+**Phase 6 — Premium Subscription (complete).** Spa owners can upgrade to
+Masahe Pinas Premium (₱500/month, test-mode checkout — no card data
+collected) from `/owner/billing`, see billing history, and cancel anytime
+without losing their listing. Premium status is fully server-derived and
+always visibly labelled, never an implied editorial endorsement. See
+[docs/development-roadmap.md](./docs/development-roadmap.md) for the full
+phase plan and current known limitations; Phase 7 (Moderation &
+Administration) is next.
 
 ## Planning Documents
 
@@ -89,9 +88,9 @@ npm install
      directory schema/RLS/storage; 0004: spa-owner signup trigger; 0005:
      search RPC; 0006: reviews/replies/votes/reports/moderation/
      notifications; 0007: follows/badges/credibility scoring; 0008: owner
-     analytics/verification/business claims/admin audit log). Without CLI
-     access, paste each file into the Supabase SQL Editor in filename order
-     instead.
+     analytics/verification/business claims/admin audit log; 0009: premium
+     subscription plans/checkout/billing). Without CLI access, paste each
+     file into the Supabase SQL Editor in filename order instead.
    - Bootstrap your first superadmin locally by signing up a normal account
      through the app, then running the SQL noted in `supabase/seed.sql`.
    - Optionally run `supabase/seed.sql`'s fictional spa listings (clearly

@@ -24,13 +24,11 @@ export function TrackedLink({
       onClick={(event) => {
         const supabase = createSupabaseBrowserClient();
         supabase.auth.getUser().then(({ data }) => {
-          void supabase
-            .from('analytics_events')
-            .insert({
-              event_type: eventType,
-              business_id: businessId,
-              user_id: data.user?.id ?? null,
-            });
+          void supabase.from('analytics_events').insert({
+            event_type: eventType,
+            business_id: businessId,
+            user_id: data.user?.id ?? null,
+          });
         });
         onClick?.(event);
       }}
