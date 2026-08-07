@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { DAY_NAMES } from '@masahepinas/types';
 import { APP_NAME } from '@masahepinas/config';
+import { formatGenderAvailability, formatPriceRange } from '@masahepinas/utils';
 import { getListingBySlug } from '@/lib/spa-businesses';
 import { getServerAuthSession } from '@/lib/auth';
 import { isBusinessSaved } from '@/lib/saved';
@@ -226,6 +227,17 @@ export default async function SpaListingPage({ params }: PageProps) {
           </p>
         </section>
       ) : null}
+
+      <section className="flex flex-wrap gap-2 text-sm">
+        <span className="rounded-full border border-white/10 px-3 py-1 text-foreground-secondary">
+          {formatGenderAvailability(listing.genderAvailability)}
+        </span>
+        {listing.priceRange ? (
+          <span className="rounded-full border border-white/10 px-3 py-1 text-foreground-secondary">
+            {formatPriceRange(listing.priceRange)}
+          </span>
+        ) : null}
+      </section>
 
       {listing.services.length > 0 ? (
         <section className="space-y-2">

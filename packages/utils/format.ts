@@ -22,3 +22,29 @@ export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return `${text.slice(0, maxLength - 1).trimEnd()}…`;
 }
+
+const GENDER_AVAILABILITY_LABELS: Record<string, string> = {
+  male_only: 'Male therapists only',
+  female_only: 'Female therapists only',
+  both: 'Male and female therapists',
+  no_preference: 'Therapist gender not specified',
+};
+
+/** Human-readable label for a business's `gender_availability` value —
+ * shown on the listing page so customers know who's available before
+ * they book. Falls back to the raw value for forward-compatibility if a
+ * new enum value ships before this map is updated. */
+export function formatGenderAvailability(value: string): string {
+  return GENDER_AVAILABILITY_LABELS[value] ?? value;
+}
+
+const PRICE_RANGE_LABELS: Record<string, string> = {
+  budget: 'Budget',
+  mid_range: 'Mid-range',
+  premium: 'Premium',
+  luxury: 'Luxury',
+};
+
+export function formatPriceRange(value: string): string {
+  return PRICE_RANGE_LABELS[value] ?? value;
+}

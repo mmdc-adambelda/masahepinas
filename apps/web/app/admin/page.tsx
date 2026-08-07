@@ -80,6 +80,11 @@ export default async function AdminHomePage() {
           title="Add a spa listing"
           description="Manually create an unclaimed listing."
         />
+        <AdminLink
+          href="/admin/spas/bulk-upload"
+          title="Bulk upload spa listings"
+          description="Import many unclaimed listings at once from a CSV file."
+        />
       </div>
     </main>
   );

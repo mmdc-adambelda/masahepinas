@@ -5,6 +5,29 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Post-launch features: bulk spa CSV import + gender availability display (2026-08-06)
+
+#### Added
+
+- `/admin/spas/bulk-upload` (superadmin-only): imports many unclaimed spa
+  listings at once from a CSV file, same insert shape as the existing
+  single-listing form (`owner_id` null, no hours/services — added later
+  by whoever claims the listing). Each row is validated and inserted
+  independently, so one bad row doesn't sink the batch — the response
+  reports exactly which rows failed and why. Capped at 500 rows / 2 MB
+  per upload; logged to `audit_logs` as `bulk_import_spas`.
+- `packages/utils/csv.ts` (`parseCsv`/`parseCsvRecords`): a small
+  RFC-4180-ish CSV parser (quoted fields, embedded commas/newlines,
+  doubled-quote escaping, CRLF/BOM handling) — not a naive `.split(',')`,
+  since addresses/descriptions routinely contain commas. Unit tested.
+- `docs/bulk-upload-template.csv`: a ready-to-fill example file with the
+  exact expected columns.
+- The spa listing page (`/spa/[slug]`) now displays gender availability
+  (male/female/both/no preference) and price range — both were already
+  collected and stored but never actually shown to customers.
+  `formatGenderAvailability`/`formatPriceRange` label helpers added to
+  `packages/utils/format.ts`.
+
 ### Post-launch feature: registration approval gate (2026-08-06)
 
 Requested after going live: replace email confirmation with a manual

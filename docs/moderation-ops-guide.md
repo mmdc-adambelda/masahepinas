@@ -47,18 +47,19 @@ check). Write a real reason, not a placeholder — it's what the affected
 user sees if they appeal, and what a superadmin sees auditing your
 decisions later.
 
-| You want to...                      | Where                              | Notes                                                                         |
-| ----------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------- |
-| Approve / reject a new registration | `/admin/users` (top section)       | Blocks all site access until approved. Reject requires a reason.              |
-| Hide a review                       | `/admin/reports`                   | Notifies the review's author with an appeal link.                             |
-| Verify / reject / suspend a listing | `/admin/listings`                  | Notifies the owner (if status leaves `verified`) with an appeal link.         |
-| Approve / reject a claim            | `/admin/claims`                    | Reassigns ownership atomically on approval.                                   |
-| Suspend a user account              | `/admin/users`                     | Notifies the user with an appeal link.                                        |
-| Mark a listing "Recommended"        | `/admin/recommendations`           | **Superadmin only**, deliberately separate from Premium — see below.          |
-| Schedule a featured placement       | `/admin/featured`                  | Superadmin only.                                                              |
-| Manage the badge/service catalog    | `/admin/badges`, `/admin/services` | Superadmin only. Badges are system-awarded, never manually granted to a user. |
-| Review the platform audit trail     | `/admin/audit-logs`                | Superadmin only, read-only.                                                   |
-| Resolve an appeal                   | `/admin/appeals`                   | Overturning auto-reverses the original action.                                |
+| You want to...                      | Where                              | Notes                                                                               |
+| ----------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------------- |
+| Approve / reject a new registration | `/admin/users` (top section)       | Blocks all site access until approved. Reject requires a reason.                    |
+| Hide a review                       | `/admin/reports`                   | Notifies the review's author with an appeal link.                                   |
+| Verify / reject / suspend a listing | `/admin/listings`                  | Notifies the owner (if status leaves `verified`) with an appeal link.               |
+| Approve / reject a claim            | `/admin/claims`                    | Reassigns ownership atomically on approval.                                         |
+| Suspend a user account              | `/admin/users`                     | Notifies the user with an appeal link.                                              |
+| Mark a listing "Recommended"        | `/admin/recommendations`           | **Superadmin only**, deliberately separate from Premium — see below.                |
+| Schedule a featured placement       | `/admin/featured`                  | Superadmin only.                                                                    |
+| Manage the badge/service catalog    | `/admin/badges`, `/admin/services` | Superadmin only. Badges are system-awarded, never manually granted to a user.       |
+| Review the platform audit trail     | `/admin/audit-logs`                | Superadmin only, read-only.                                                         |
+| Bulk-import listings from a CSV     | `/admin/spas/bulk-upload`          | Superadmin only. Creates unclaimed listings; see the column reference on that page. |
+| Resolve an appeal                   | `/admin/appeals`                   | Overturning auto-reverses the original action.                                      |
 
 ## "Recommended" vs "Premium" — do not confuse these
 

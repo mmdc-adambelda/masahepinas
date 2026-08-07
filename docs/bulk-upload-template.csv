@@ -1,0 +1,3 @@
+business_name,description,contact_number,gender_availability,price_range,website_url,booking_contact_number,social_media_url,address_line,barangay,city_municipality,province,region,postal_code,latitude,longitude,status
+Serenity Leaf Spa (example),"A calm, plant-filled day spa offering Swedish and deep tissue massage.",09171234567,both,premium,,,,"123 Ayala Avenue",Bel-Air,Makati,Metro Manila,Metro Manila,1209,14.5547,121.0244,unverified
+Bamboo Grove Wellness (example),"A neighborhood wellness center known for Thai massage and reflexology.",09181234567,female_only,mid_range,,,,"45 Tomas Morato Avenue","South Triangle",Quezon City,Metro Manila,Metro Manila,1103,14.6367,121.0341,unverified
