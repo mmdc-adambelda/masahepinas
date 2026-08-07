@@ -11,6 +11,7 @@ export interface PlatformStats {
   pendingListings: number;
   openReports: number;
   pendingClaims: number;
+  pendingRegistrations: number;
   reviewCount: number;
   activeSubscriptions: number;
   monthlyRecurringRevenuePhp: number;
@@ -27,6 +28,7 @@ export async function getPlatformStats(): Promise<PlatformStats> {
     { count: pendingListings },
     { count: openReports },
     { count: pendingClaims },
+    { count: pendingRegistrations },
     { count: reviewCount },
     { count: activeSubscriptions },
   ] = await Promise.all([
@@ -59,6 +61,10 @@ export async function getPlatformStats(): Promise<PlatformStats> {
       .select('id', { count: 'exact', head: true })
       .eq('status', 'pending'),
     supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending_approval'),
+    supabase
       .from('reviews')
       .select('id', { count: 'exact', head: true })
       .eq('moderation_status', 'visible'),
@@ -81,10 +87,39 @@ export async function getPlatformStats(): Promise<PlatformStats> {
     pendingListings: pendingListings ?? 0,
     openReports: openReports ?? 0,
     pendingClaims: pendingClaims ?? 0,
+    pendingRegistrations: pendingRegistrations ?? 0,
     reviewCount: reviewCount ?? 0,
     activeSubscriptions: active,
     monthlyRecurringRevenuePhp,
   };
+}
+
+export interface AdminPendingRegistrationRow {
+  id: string;
+  displayName: string;
+  city: string | null;
+  province: string | null;
+  createdAt: string;
+}
+
+/** The registration-approval queue — oldest sign-ups first, so nobody
+ * waits longer than they have to. */
+export async function listPendingRegistrations(): Promise<AdminPendingRegistrationRow[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from('profiles')
+    .select('id, display_name, city, province, created_at')
+    .eq('status', 'pending_approval')
+    .order('created_at', { ascending: true })
+    .limit(100);
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    displayName: row.display_name,
+    city: row.city,
+    province: row.province,
+    createdAt: row.created_at,
+  }));
 }
 
 export interface AdminUserRow {

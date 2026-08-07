@@ -67,6 +67,119 @@ export async function setUserStatus(
   return { error: null };
 }
 
+/** Approve a pending registration — moderator-level, same tier as
+ * suspend/reinstate. Logged to moderation_actions since it's a
+ * per-account decision, not a platform-config change. Unlike suspend/
+ * reject, this doesn't require a typed reason — approving is the
+ * non-punitive happy path, not a judgment call that needs justifying. */
+export async function approveRegistration(
+  userId: string,
+  _prevState: AdminUserActionResult,
+): Promise<AdminUserActionResult> {
+  const session = await requireRole('moderator');
+  const supabase = await createSupabaseServerClient();
+
+  const { data: before } = await supabase
+    .from('profiles')
+    .select('status')
+    .eq('id', userId)
+    .maybeSingle();
+  if (before?.status !== 'pending_approval') {
+    return { error: 'This account is no longer pending approval.' };
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ status: 'active' })
+    .eq('id', userId);
+  if (error) return { error: 'Could not approve this account. Please try again.' };
+
+  await supabase.from('moderation_actions').insert({
+    moderator_id: session.userId,
+    action_type: 'approve_registration',
+    target_type: 'profile',
+    target_id: userId,
+    reason: 'Registration approved',
+    previous_state: before,
+    new_state: { status: 'active' },
+  });
+
+  await supabase.from('notifications').insert({
+    user_id: userId,
+    type: 'registration_approved',
+    title: 'Your account was approved',
+    body: 'You now have full access to Masahe Pinas.',
+    link_url: '/',
+  });
+
+  revalidatePath('/admin/users');
+  revalidatePath('/admin');
+  return { error: null };
+}
+
+/** Reject a pending registration. There's no account-deletion path
+ * available to the app (that requires the Supabase Admin API / service-
+ * role key, which is intentionally never used from this app — see
+ * docs/security-checklist.md), so a rejection lands the account in
+ * 'suspended' rather than removing it. The person can appeal like any
+ * other suspension. */
+export async function rejectRegistration(
+  userId: string,
+  _prevState: AdminUserActionResult,
+  formData: FormData,
+): Promise<AdminUserActionResult> {
+  const session = await requireRole('moderator');
+  const supabase = await createSupabaseServerClient();
+
+  const parsed = moderationActionSchema.safeParse({ reason: formData.get('reason') });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'A reason is required.' };
+  }
+
+  const { data: before } = await supabase
+    .from('profiles')
+    .select('status')
+    .eq('id', userId)
+    .maybeSingle();
+  if (before?.status !== 'pending_approval') {
+    return { error: 'This account is no longer pending approval.' };
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ status: 'suspended' })
+    .eq('id', userId);
+  if (error) return { error: 'Could not reject this account. Please try again.' };
+
+  const { data: action } = await supabase
+    .from('moderation_actions')
+    .insert({
+      moderator_id: session.userId,
+      action_type: 'reject_registration',
+      target_type: 'profile',
+      target_id: userId,
+      reason: parsed.data.reason,
+      previous_state: before,
+      new_state: { status: 'suspended' },
+    })
+    .select('id')
+    .single();
+
+  if (action) {
+    await supabase.from('notifications').insert({
+      user_id: userId,
+      type: 'registration_rejected',
+      title: 'Your registration was not approved',
+      body: `Reason: ${parsed.data.reason}. You can appeal this decision.`,
+      link_url: `/appeals/new/${action.id}`,
+    });
+  }
+
+  revalidatePath('/admin/users');
+  revalidatePath('/admin');
+  return { error: null };
+}
+
 /** Granting/revoking staff roles is superadmin-only (docs/permissions.md
  * §2 "Manage moderators: superadmin"), logged to the platform-wide
  * audit_logs table rather than moderation_actions. */

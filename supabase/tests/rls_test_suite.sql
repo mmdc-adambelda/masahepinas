@@ -2,7 +2,7 @@
 -- Masahe Pinas — RLS / Permission Boundary Test Suite (Phase 8)
 -- =====================================================================
 -- Purpose: exercise the row-level-security policies from migrations
--- 0001-0011 as each of the app's real personas (guest/anon, customer,
+-- 0001-0014 as each of the app's real personas (guest/anon, customer,
 -- a second customer, spa_owner, moderator, superadmin) and assert the
 -- expected allow/deny outcome for the boundary cases called out in
 -- docs/security-checklist.md and docs/permissions.md.
@@ -178,6 +178,11 @@ select pg_temp.expect_denied(
   $q$insert into public.user_roles (user_id, role) values ('00000000-0000-0000-0000-0000000000a2', 'superadmin')$q$
 );
 
+select pg_temp.expect_denied(
+  'customer cannot self-approve their own pending registration (guard trigger, 0014)',
+  $q$update public.profiles set status = 'active' where id = '00000000-0000-0000-0000-0000000000a2'$q$
+);
+
 reset role;
 
 set local role authenticated;
@@ -189,6 +194,12 @@ select pg_temp.expect_rows(
   1
 );
 delete from public.user_roles where user_id = '00000000-0000-0000-0000-0000000000a2' and role = 'moderator';
+
+select pg_temp.expect_rows(
+  'superadmin (staff) can approve a pending registration',
+  $q$update public.profiles set status = 'active' where id = '00000000-0000-0000-0000-0000000000a2'$q$,
+  1
+);
 
 reset role;
 

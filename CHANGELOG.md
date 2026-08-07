@@ -5,6 +5,58 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Post-launch feature: registration approval gate (2026-08-06)
+
+Requested after going live: replace email confirmation with a manual
+superadmin/moderator approval step before any new account can use the
+site.
+
+#### Added
+
+- `supabase/migrations/0012_add_pending_approval_enums.sql`: adds the
+  `pending_approval` value to `account_status` and `approve_registration`/
+  `reject_registration` to `moderation_action_type` (split into its own
+  migration — Postgres won't let a brand-new enum value be used in the
+  same transaction that added it).
+- `supabase/migrations/0013_registration_approval.sql`: `profiles.status`
+  now defaults to `pending_approval` instead of `active`.
+- `apps/web/lib/supabase/middleware.ts`: the actual access gate — any
+  signed-in user whose profile is still `pending_approval` is redirected
+  to `/pending-approval` for every route except that page and `/auth/*`.
+- `/pending-approval` page, and an "Approve"/"Reject" queue at the top of
+  `/admin/users` (+ a "Pending registrations" stat on `/admin`). Reject
+  reuses the existing suspend/appeal notification flow (no account-
+  deletion path exists without a service-role key, which this app
+  intentionally never uses — see docs/security-checklist.md).
+- Sign-up now redirects to `/` instead of `/sign-up/check-email` — with
+  email confirmation disabled (a manual Supabase Auth dashboard setting,
+  not something a migration can flip), `signUp()` returns a session
+  immediately and the middleware gate takes over from there.
+
+#### Fixed (security)
+
+- **`supabase/migrations/0014_protect_profile_status.sql`**: while
+  building this, found that `profiles_update_self`
+  (`0001_init_profiles_and_roles.sql`) had no column-level restriction —
+  any authenticated user could update _any_ column on their own profile
+  row, including `status`. A pending user could have simply called
+  `supabase.from('profiles').update({ status: 'active' })` themselves and
+  skipped the entire approval gate (and, pre-existing but equally real: a
+  suspended user could un-suspend themselves the same way). Fixed with a
+  guard trigger, the same `enforce_*_update_guard` pattern already used
+  on `spa_businesses`/`reviews`.
+
+#### Known limitation
+
+The approval gate is enforced at the Next.js middleware layer (page
+access), not at the RLS layer (row read/write permissions) — a pending
+user's own data-level RLS behaves the same as an active user's. A
+sufficiently technical user could still call the Supabase REST API
+directly, bypassing the Next.js app entirely, while pending. Tracked as a
+follow-up if this matters for the actual threat model (would mean adding
+`status = 'active'` checks to `reviews_insert`, `spa_businesses_insert`,
+etc.) — see the comment in `0013_registration_approval.sql`.
+
 ### Post-Phase-8 fix (2026-08-06)
 
 Running [supabase/tests/rls_test_suite.sql](supabase/tests/rls_test_suite.sql)

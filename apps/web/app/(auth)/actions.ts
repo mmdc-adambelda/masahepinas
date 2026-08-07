@@ -16,8 +16,12 @@ export interface ActionResult {
 /**
  * Customer registration. Server-side validation is authoritative — the
  * client form uses the same Zod schema, but that alone is never trusted
- * (see docs/security-checklist.md). Supabase requires email verification
- * before the session is fully active (project auth setting, Phase 1).
+ * (see docs/security-checklist.md). Email confirmation is disabled
+ * (project auth setting) — a session starts immediately, and access is
+ * instead gated on superadmin approval (`profiles.status =
+ * 'pending_approval'` by default; see
+ * supabase/migrations/0013_registration_approval.sql and
+ * apps/web/lib/supabase/middleware.ts).
  *
  * The `profiles` row and default `customer` role are created by the
  * `handle_new_user` DB trigger defined in
@@ -63,7 +67,12 @@ export async function signUpCustomer(
     return { error: error.message };
   }
 
-  redirect('/sign-up/check-email');
+  // With email confirmation disabled (see docs/launch-checklist.md
+  // "registration approval"), signUp() returns an active session
+  // immediately — there's no email to go check. Redirect home; the
+  // middleware registration-approval gate (new accounts start
+  // 'pending_approval') sends them to /pending-approval automatically.
+  redirect('/');
 }
 
 /**
@@ -72,9 +81,10 @@ export async function signUpCustomer(
  * supabase/migrations/0004_spa_owner_signup.sql) the `spa_owner` role and a
  * draft `spa_businesses` row in `pending_review` status. The owner
  * completes location/hours/services/photos afterwards on `/submit-a-spa`
- * once signed in — that page requires a real session so image uploads can
- * be authorized by RLS (`owns_business`), which isn't possible before
- * email confirmation.
+ * once signed in and approved — that page requires a real session so
+ * image uploads can be authorized by RLS (`owns_business`), and access
+ * itself requires clearing the registration-approval gate (see
+ * signUpCustomer's doc comment above).
  */
 export async function signUpSpaOwner(
   _prevState: ActionResult,
@@ -113,7 +123,12 @@ export async function signUpSpaOwner(
     return { error: error.message };
   }
 
-  redirect('/sign-up/check-email');
+  // With email confirmation disabled (see docs/launch-checklist.md
+  // "registration approval"), signUp() returns an active session
+  // immediately — there's no email to go check. Redirect home; the
+  // middleware registration-approval gate (new accounts start
+  // 'pending_approval') sends them to /pending-approval automatically.
+  redirect('/');
 }
 
 export async function signIn(

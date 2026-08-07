@@ -34,6 +34,11 @@ export default async function AdminHomePage() {
           value={stats.pendingClaims}
           highlight={stats.pendingClaims > 0}
         />
+        <StatCard
+          label="Pending registrations"
+          value={stats.pendingRegistrations}
+          highlight={stats.pendingRegistrations > 0}
+        />
         <StatCard label="Reviews" value={stats.reviewCount} />
         <StatCard label="Active subscriptions" value={stats.activeSubscriptions} />
         <StatCard label="MRR" value={formatPhp(stats.monthlyRecurringRevenuePhp)} />
@@ -68,7 +73,7 @@ export default async function AdminHomePage() {
         <AdminLink
           href="/admin/users"
           title="User management"
-          description="Search users, suspend accounts, manage moderator roles."
+          description="Approve pending registrations, suspend accounts, manage moderator roles."
         />
         <AdminLink
           href="/admin/spas/new"

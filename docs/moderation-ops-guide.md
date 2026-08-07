@@ -10,20 +10,34 @@ operational walkthrough of the dashboard that implements that policy.
 
 ## Daily/regular routine
 
-1. **`/admin/reports`** — the report queue. Work through open
+1. **`/admin/users`** — the registration approval queue is at the top of
+   this page. New sign-ups can't use the site at all until approved here
+   (see "Registration approval" below) — check this first, since it's
+   blocking real people from getting in.
+2. **`/admin/reports`** — the report queue. Work through open
    `content_reports`, oldest first unless something looks urgent
    (harassment, blackmail/extortion, illegal service promotion reports
    jump the queue).
-2. **`/admin/listings?status=pending_review`** — new spa submissions
+3. **`/admin/listings?status=pending_review`** — new spa submissions
    awaiting verification. Check the business details, and if the owner
    uploaded a permit/registration document, use the "View verification
    document" link (a 5-minute signed URL — reload the page if it expires
    before you click it) before approving.
-3. **`/admin/claims`** — existing-listing ownership claims. Same
+4. **`/admin/claims`** — existing-listing ownership claims. Same
    verification-document check applies.
-4. **`/admin/appeals`** — appeals of your own or another moderator's past
+5. **`/admin/appeals`** — appeals of your own or another moderator's past
    decisions. Read the original reason (shown inline) and the appellant's
    message, then Overturn or Uphold.
+
+## Registration approval
+
+Every new sign-up starts in a `pending_approval` state and cannot access
+any page of the site (not even browsing) until a moderator or superadmin
+approves them from `/admin/users`. There is no email-confirmation step
+anymore — this replaced it. Approve doesn't require a reason (it's the
+non-punitive default path); Reject does, and sends the same appeal-linked
+notification a suspension does (there's no account-deletion path in the
+app, so a rejected registration ends up `suspended`, not removed).
 
 ## Taking an action
 
@@ -35,10 +49,11 @@ decisions later.
 
 | You want to...                      | Where                              | Notes                                                                         |
 | ----------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------- |
+| Approve / reject a new registration | `/admin/users` (top section)       | Blocks all site access until approved. Reject requires a reason.              |
 | Hide a review                       | `/admin/reports`                   | Notifies the review's author with an appeal link.                             |
 | Verify / reject / suspend a listing | `/admin/listings`                  | Notifies the owner (if status leaves `verified`) with an appeal link.         |
 | Approve / reject a claim            | `/admin/claims`                    | Reassigns ownership atomically on approval.                                   |
-| Suspend a user account              | `/admin/users`                     | Superadmin only. Notifies the user with an appeal link.                       |
+| Suspend a user account              | `/admin/users`                     | Notifies the user with an appeal link.                                        |
 | Mark a listing "Recommended"        | `/admin/recommendations`           | **Superadmin only**, deliberately separate from Premium — see below.          |
 | Schedule a featured placement       | `/admin/featured`                  | Superadmin only.                                                              |
 | Manage the badge/service catalog    | `/admin/badges`, `/admin/services` | Superadmin only. Badges are system-awarded, never manually granted to a user. |

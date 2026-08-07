@@ -49,6 +49,8 @@ export type ModerationActionType =
   | 'reject_claim'
   | 'remove_review'
   | 'resolve_report'
-  | 'dismiss_report';
+  | 'dismiss_report'
+  | 'approve_registration'
+  | 'reject_registration';
 
-export type AccountStatus = 'active' | 'suspended';
+export type AccountStatus = 'active' | 'suspended' | 'pending_approval';
