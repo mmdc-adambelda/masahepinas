@@ -5,6 +5,33 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Multi-select bulk actions + brand assets (2026-08-06)
+
+#### Added
+
+- `/admin/listings`: checkboxes per listing + a sticky bulk-action bar
+  (dropdown + reason + "Apply to checked") to Verify/Reject/Suspend/
+  Archive/Delete many listings at once, alongside the existing per-row
+  single-listing form. Checkboxes associate with the bulk form via the
+  HTML `form` attribute rather than DOM nesting (two `<form>`s can't
+  nest, and each row already has its own individual-action form). A
+  "Select all" toggle is a small client-side DOM helper, not React
+  state, since the checkboxes live in server-rendered rows.
+  `bulkApplyListingAction` reuses the exact same per-item logic as the
+  single-row action (extracted into a shared `applyOneListingAction`
+  helper) — one bad row in a batch doesn't stop the rest, and the
+  summary reports how many succeeded/failed.
+- Real brand assets wired in: `apps/web/app/icon.png` and `apple-icon.png`
+  (Next.js's file-based favicon convention — auto-generates the
+  `<link rel="icon">`/apple-touch-icon tags, no metadata code needed)
+  from `mp-logo.png`, and the site header now shows the
+  `logo-banner-cream-bg.png` lockup (via `next/image`, optimized) instead
+  of plain text — rounded corners so the cream background reads as an
+  intentional badge against the dark header rather than a stray
+  rectangle.
+- `.claude/launch.json`: dev-server preview config (not app code, just a
+  local tooling convenience for previewing `apps/web`).
+
 ### Drop geocoding dependency + admin listings UX overhaul (2026-08-06)
 
 Requested: stop requiring geocoding for bulk upload (accept the CSV as-is),

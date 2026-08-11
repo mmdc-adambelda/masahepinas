@@ -3,7 +3,9 @@ import { hasRole } from '@masahepinas/types';
 import { requireRole } from '@/lib/auth';
 import { listListingsByStatus } from '@/lib/admin';
 import { AdminBackLink } from '../back-link';
+import { BULK_FORM_ID, BulkActionBar } from './bulk-action-bar';
 import { ListingActionForm } from './listing-action-form';
+import { SelectAllCheckbox } from './select-all-checkbox';
 
 export const metadata = { title: 'Listing verification' };
 
@@ -75,19 +77,34 @@ export default async function AdminListingsPage({
         <p className="text-foreground-secondary">No listings match this filter.</p>
       ) : (
         <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SelectAllCheckbox formId={BULK_FORM_ID} />
+          </div>
+          <BulkActionBar canDelete={isSuperadmin} />
           {listings.map((listing) => (
             <article key={listing.id} className="card space-y-3">
               <div className="flex items-center justify-between gap-3">
-                <div>
-                  <Link
-                    href={`/spa/${listing.slug}`}
-                    className="font-medium text-foreground hover:underline"
-                  >
-                    {listing.businessName}
-                  </Link>
-                  <p className="text-xs text-foreground-secondary">
-                    Status: {listing.status} · {listing.ownerId ? 'Claimed' : 'Unclaimed'}
-                  </p>
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    name="businessIds"
+                    value={listing.id}
+                    form={BULK_FORM_ID}
+                    className="mt-1"
+                    aria-label={`Select ${listing.businessName}`}
+                  />
+                  <div>
+                    <Link
+                      href={`/spa/${listing.slug}`}
+                      className="font-medium text-foreground hover:underline"
+                    >
+                      {listing.businessName}
+                    </Link>
+                    <p className="text-xs text-foreground-secondary">
+                      Status: {listing.status} ·{' '}
+                      {listing.ownerId ? 'Claimed' : 'Unclaimed'}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-3 text-xs">
                   {isSuperadmin ? (

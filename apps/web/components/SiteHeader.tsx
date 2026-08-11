@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { APP_NAME } from '@masahepinas/config';
 import { hasRole, isStaff } from '@masahepinas/types';
@@ -12,8 +13,15 @@ export async function SiteHeader() {
   return (
     <header className="border-b border-white/5 bg-background-secondary">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
-        <Link href="/" className="text-sm font-semibold text-foreground">
-          {APP_NAME}
+        <Link href="/" className="shrink-0">
+          <Image
+            src="/logo-banner-cream-bg.png"
+            alt={APP_NAME}
+            width={1408}
+            height={768}
+            priority
+            className="h-9 w-auto rounded-md sm:h-10"
+          />
         </Link>
         <nav className="flex flex-wrap items-center gap-4 text-sm text-foreground-secondary">
           <Link href="/search" className="hover:text-foreground">
