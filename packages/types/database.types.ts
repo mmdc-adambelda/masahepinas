@@ -636,6 +636,28 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['spa_owners']['Insert']>;
         Relationships: [];
       };
+      business_internal_contacts: {
+        Row: {
+          id: string;
+          business_id: string;
+          owner_name: string | null;
+          owner_phone: string | null;
+          owner_email: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          owner_name?: string | null;
+          owner_phone?: string | null;
+          owner_email?: string | null;
+        };
+        Update: Partial<
+          Database['public']['Tables']['business_internal_contacts']['Insert']
+        >;
+        Relationships: [];
+      };
       business_claims: {
         Row: {
           id: string;

@@ -6,6 +6,12 @@
  * geocoder) means adding one new class here, not touching call sites.
  */
 
+// Nominatim's usage policy requires a valid HTTP Referer OR a custom
+// User-Agent identifying the calling application — browsers send a
+// Referer automatically, but a server-side caller (e.g. the bulk-upload
+// admin action) does not, so this is set explicitly on every request.
+const NOMINATIM_USER_AGENT = 'MasahePinas/1.0 (+https://www.masahepinas.com)';
+
 export interface GeocodeResult {
   label: string;
   addressLine: string;
@@ -52,7 +58,7 @@ export class NominatimGeocodingProvider implements GeocodingProvider {
     url.searchParams.set('limit', '5');
 
     const response = await fetch(url.toString(), {
-      headers: { Accept: 'application/json' },
+      headers: { Accept: 'application/json', 'User-Agent': NOMINATIM_USER_AGENT },
     });
     if (!response.ok) return [];
     const results = (await response.json()) as NominatimResult[];
@@ -70,7 +76,7 @@ export class NominatimGeocodingProvider implements GeocodingProvider {
     url.searchParams.set('addressdetails', '1');
 
     const response = await fetch(url.toString(), {
-      headers: { Accept: 'application/json' },
+      headers: { Accept: 'application/json', 'User-Agent': NOMINATIM_USER_AGENT },
     });
     if (!response.ok) return null;
     const result = (await response.json()) as NominatimResult;

@@ -82,6 +82,20 @@ export default async function AdminListingsPage({
                   </a>
                 ) : null}
               </div>
+              {listing.internalContact ? (
+                <div className="rounded-md border border-white/10 bg-background-secondary p-2 text-xs text-foreground-secondary">
+                  <span className="font-medium text-foreground">
+                    Internal contact (staff only, not public):
+                  </span>{' '}
+                  {[
+                    listing.internalContact.ownerName,
+                    listing.internalContact.ownerPhone,
+                    listing.internalContact.ownerEmail,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ') || 'None on file'}
+                </div>
+              ) : null}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <StatusForm
                   businessId={listing.id}

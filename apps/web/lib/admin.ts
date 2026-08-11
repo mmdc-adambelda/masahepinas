@@ -169,6 +169,14 @@ export interface AdminListingRow {
    * document, or null if they haven't uploaded one. Never a public URL —
    * the bucket is private. */
   verificationDocumentUrl: string | null;
+  /** Staff-only reference info about the business's real-world owner
+   * (e.g. captured during a bulk CSV import) — never shown publicly. See
+   * supabase/migrations/0015_business_internal_contacts.sql. */
+  internalContact: {
+    ownerName: string | null;
+    ownerPhone: string | null;
+    ownerEmail: string | null;
+  } | null;
 }
 
 export async function listListingsByStatus(
@@ -214,6 +222,25 @@ export async function listListingsByStatus(
     }),
   );
 
+  const businessIds = rows.map((r) => r.id);
+  const internalContactByBusiness = new Map<
+    string,
+    { ownerName: string | null; ownerPhone: string | null; ownerEmail: string | null }
+  >();
+  if (businessIds.length > 0) {
+    const { data: contacts } = await supabase
+      .from('business_internal_contacts')
+      .select('business_id, owner_name, owner_phone, owner_email')
+      .in('business_id', businessIds);
+    for (const contact of contacts ?? []) {
+      internalContactByBusiness.set(contact.business_id, {
+        ownerName: contact.owner_name,
+        ownerPhone: contact.owner_phone,
+        ownerEmail: contact.owner_email,
+      });
+    }
+  }
+
   return rows.map((row) => ({
     id: row.id,
     slug: row.slug,
@@ -224,6 +251,7 @@ export async function listListingsByStatus(
     verificationDocumentUrl: row.owner_id
       ? (signedUrlByOwner.get(row.owner_id) ?? null)
       : null,
+    internalContact: internalContactByBusiness.get(row.id) ?? null,
   }));
 }
 

@@ -43,3 +43,5 @@ export const PRICE_RANGE_OPTIONS = ['budget', 'mid_range', 'premium', 'luxury'] 
 export const APP_ROLES = ['customer', 'spa_owner', 'moderator', 'superadmin'] as const;
 
 export type AppRole = (typeof APP_ROLES)[number];
+
+export * from './ph-regions';

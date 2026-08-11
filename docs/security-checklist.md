@@ -15,7 +15,7 @@ done in Phase 0.
 - [x] File uploads validated server-side (type, size, content sniffing) in
       addition to client-side checks — magic-byte sniffing (not just the
       client-reported MIME type) in `image-actions.ts`/`verification-
-    actions.ts`, plus a hard bucket-level `file_size_limit` +
+  actions.ts`, plus a hard bucket-level `file_size_limit` +
       `allowed_mime_types` allowlist enforced by Supabase Storage itself
       (defense-in-depth even if app code had a bug).
 - [x] Verification documents and other private storage objects served only
@@ -78,8 +78,10 @@ done in Phase 0.
 ## Privacy
 
 - [ ] Exact customer addresses never collected/exposed (only city/province)
-- [ ] Verification documents, payment details, private moderation notes, and
-      internal fraud/credibility scores never exposed via public API or UI
+- [ ] Verification documents, payment details, private moderation notes,
+      internal fraud/credibility scores, and business owners' internal
+      contact info (`business_internal_contacts` — name/phone/email
+      captured for outreach) never exposed via public API or UI
 - [ ] Therapist personal identity data excluded from MVP schema and UI
 - [ ] Error logging captures diagnostic detail without leaking PII into logs
       accessible outside the trusted backend

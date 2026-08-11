@@ -5,6 +5,43 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Bulk upload robustness + internal owner contact fields (2026-08-06)
+
+Follow-up after the first real bulk-upload attempt failed on every row.
+
+#### Fixed
+
+- Row-error messages now name the specific field that failed (`region:
+String must contain at least 2 character(s)`) instead of a bare
+  `"Required"` with no context.
+- `contact_number`/`booking_contact_number` are normalized (spaces,
+  dashes, parens stripped) before validation — scraped/exported phone
+  numbers are rarely in the exact `09171234567` shape.
+- Added a `User-Agent` header to `packages/utils/maps/geocoding.ts`'s
+  Nominatim requests — required by their usage policy for non-browser
+  callers (the bulk-upload action calls it server-side; the existing
+  `MapPicker` call site worked by accident via the browser's automatic
+  Referer header).
+
+#### Added
+
+- Only `business_name`, `contact_number`, and `province` are actually
+  required now — every other field has a fallback: missing description
+  is auto-generated, missing region is looked up from province
+  (`packages/config/ph-regions.ts`, a full PH province→region table),
+  missing address/city is borrowed from the geocode result or the
+  province itself, and missing coordinates are best-effort geocoded from
+  whatever address fragments are present (capped at ~45 lookups/upload
+  and rate-limited to ~1/sec to respect Nominatim's usage policy — see
+  `MAX_GEOCODE_CALLS` in `actions.ts`).
+- `supabase/migrations/0015_business_internal_contacts.sql`: a new
+  `owner_name`/`owner_phone`/`owner_email` staff-only table (separate
+  from `spa_businesses` on purpose — RLS is row-level, not column-level,
+  and `spa_businesses_select` is public, so these columns can't live
+  there without leaking to every visitor). Populated optionally via the
+  bulk CSV's `owner_name`/`owner_phone`/`owner_email` columns; shown on
+  `/admin/listings` so staff can reach out about claiming a listing.
+
 ### Post-launch features: bulk spa CSV import + gender availability display (2026-08-06)
 
 #### Added

@@ -3,11 +3,22 @@ import { requireSuperadmin } from '@/lib/auth';
 import { BulkUploadForm } from './bulk-upload-form';
 
 export const metadata = { title: 'Bulk upload spa listings (admin)' };
+// Rows missing coordinates are best-effort geocoded (rate-limited to
+// comply with Nominatim's usage policy — see actions.ts), which can take
+// close to a minute for a full batch; extend past the platform default.
+export const maxDuration = 60;
 
 const CSV_COLUMNS = [
   { name: 'business_name', required: true },
-  { name: 'description', required: true, note: 'at least 20 characters' },
-  { name: 'contact_number', required: true, note: 'PH mobile, e.g. 09171234567' },
+  {
+    name: 'description',
+    note: 'auto-generated from the business name/city/province if left blank or under 20 characters',
+  },
+  {
+    name: 'contact_number',
+    required: true,
+    note: 'PH mobile — spaces/dashes/parens are stripped automatically, e.g. "0917 123 4567" works',
+  },
   {
     name: 'gender_availability',
     note: 'male_only / female_only / both / no_preference — defaults to no_preference',
@@ -16,18 +27,33 @@ const CSV_COLUMNS = [
   { name: 'website_url' },
   { name: 'booking_contact_number' },
   { name: 'social_media_url' },
-  { name: 'address_line', required: true },
+  {
+    name: 'address_line',
+    note: 'if blank, filled from the geocoded result or city/province',
+  },
   { name: 'barangay' },
-  { name: 'city_municipality', required: true },
+  {
+    name: 'city_municipality',
+    note: 'if blank, filled from the geocoded result — leave blank for a home-service business with no fixed storefront',
+  },
   { name: 'province', required: true },
-  { name: 'region', required: true },
+  { name: 'region', note: 'auto-filled from province if left blank' },
   { name: 'postal_code' },
-  { name: 'latitude', required: true },
-  { name: 'longitude', required: true },
+  {
+    name: 'latitude',
+    note: 'if blank (with longitude), geocoded automatically from the address — best-effort, rate-limited to ~45 lookups per upload',
+  },
+  { name: 'longitude', note: 'see latitude' },
   {
     name: 'status',
     note: 'pending_review / verified / unverified — defaults to unverified',
   },
+  {
+    name: 'owner_name',
+    note: 'internal only — never shown publicly, only to staff on /admin/listings, for outreach about claiming the listing',
+  },
+  { name: 'owner_phone', note: 'internal only, same as owner_name' },
+  { name: 'owner_email', note: 'internal only, same as owner_name' },
 ];
 
 export default async function AdminBulkUploadSpasPage() {
@@ -46,9 +72,29 @@ export default async function AdminBulkUploadSpasPage() {
             adding a single listing
           </Link>
           . Each row is validated and inserted independently, so one bad row doesn&apos;t
-          sink the whole batch. Up to 500 rows / 2 MB per upload. Business hours and
+          sink the whole batch — the result below names exactly which field failed on any
+          row that didn&apos;t import. Up to 500 rows / 2 MB per upload.
+        </p>
+        <p className="text-sm text-foreground-secondary">
+          <strong className="text-foreground">
+            Only business_name, contact_number, and province are actually required
+          </strong>{' '}
+          — everything else has a fallback: missing description/region are auto-generated,
+          missing address/city are borrowed from the geocoded result or the province
+          itself, and missing coordinates are best-effort geocoded from whatever address
+          is available (capped at ~45 lookups per upload to respect the geocoding
+          provider&apos;s rate limit — if more rows than that need it, re-run the upload
+          again for the remainder once the first pass finishes). Business hours and
           services aren&apos;t set by the import — add those afterward from the listing,
           or leave them for the eventual owner to fill in when they claim it.
+        </p>
+        <p className="text-sm text-foreground-secondary">
+          <code>owner_name</code>, <code>owner_phone</code>, and <code>owner_email</code>{' '}
+          are optional internal-only fields — never shown to the public, only to staff on{' '}
+          <Link href="/admin/listings" className="text-brand-accent hover:underline">
+            the listing verification page
+          </Link>
+          , so you can reach out to the real owner about claiming the listing.
         </p>
       </div>
 

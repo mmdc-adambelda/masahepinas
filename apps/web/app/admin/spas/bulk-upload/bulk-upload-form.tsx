@@ -35,6 +35,11 @@ export function BulkUploadForm() {
               {state.summary.totalRows} row{state.summary.totalRows === 1 ? '' : 's'}
             </span>
             <span className="text-brand-accent">{state.summary.created} created</span>
+            {state.summary.geocoded > 0 ? (
+              <span className="text-foreground-secondary">
+                {state.summary.geocoded} geocoded
+              </span>
+            ) : null}
             {state.summary.failed > 0 ? (
               <span className="text-danger">{state.summary.failed} failed</span>
             ) : null}
