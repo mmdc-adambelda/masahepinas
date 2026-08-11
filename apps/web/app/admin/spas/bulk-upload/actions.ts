@@ -6,6 +6,7 @@ import {
   parseCsvRecords,
   slugify,
   getGeocodingProvider,
+  logger,
   type GeocodeResult,
 } from '@masahepinas/utils';
 import { lookupPhRegion } from '@masahepinas/config';
@@ -34,17 +35,24 @@ const MAX_ROWS = 500;
 const LISTING_STATUSES = ['pending_review', 'verified', 'unverified'] as const;
 
 // Nominatim's public-instance usage policy caps requests at ~1/second and
-// asks that it not be used for heavy/bulk geocoding — MAX_GEOCODE_CALLS
-// bounds a single upload's worst case to roughly (45 * 1.1s) ≈ 50s, which
-// fits inside the 60s maxDuration set on this route (see page.tsx). Rows
-// beyond the cap, or whose address can't be resolved, are reported as
-// row errors — re-running the upload (e.g. after splitting the file)
-// picks up where the last run left off, since already-created rows are
-// skipped via the slug the second time around... actually they are NOT
-// automatically deduped by business identity, only by slug collision, so
-// don't re-upload rows that already succeeded.
+// asks that it not be used for heavy/bulk geocoding. MAX_GEOCODE_CALLS is
+// a secondary cap; GEOCODE_TIME_BUDGET_MS below is the real limiting
+// factor in practice, kept well under this route's maxDuration (see
+// page.tsx) so the request finishes gracefully rather than being
+// force-killed by the platform (which shows up as an uncaught-crash
+// error page, not a normal validation failure). Rows past either limit,
+// or whose address can't be resolved, are reported as row errors —
+// re-running the upload picks up the remaining rows, but don't re-run it
+// against rows that already succeeded (they aren't deduped by business
+// identity, only by slug collision).
 const MAX_GEOCODE_CALLS = 45;
 const GEOCODE_DELAY_MS = 1100;
+// Belt-and-suspenders alongside MAX_GEOCODE_CALLS: stop attempting new
+// geocode lookups once this much wall-clock time has elapsed, regardless
+// of call count, so a slow network doesn't run the whole request past
+// the platform's function-duration limit (which — unlike a validation
+// failure — surfaces as an unhandled crash, not a graceful error).
+const GEOCODE_TIME_BUDGET_MS = 20_000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -106,6 +114,24 @@ export async function bulkUploadSpas(
   _prevState: BulkUploadResult,
   formData: FormData,
 ): Promise<BulkUploadResult> {
+  try {
+    return await runBulkUpload(formData);
+  } catch (err) {
+    // Anything unexpected here (a network blip mid-geocode, a timeout, a
+    // bug) must never crash the whole request — that surfaces to the
+    // admin as the generic "Something went wrong" error boundary with no
+    // way to tell what happened. Always return a graceful result instead.
+    logger.error('bulkUploadSpas crashed', {
+      message: err instanceof Error ? err.message : String(err),
+    });
+    return {
+      error:
+        'Something went wrong partway through the upload (possibly a network issue while geocoding). Any rows already created are saved — check /admin/listings, then re-run the upload for the rest.',
+    };
+  }
+}
+
+async function runBulkUpload(formData: FormData): Promise<BulkUploadResult> {
   const session = await requireSuperadmin();
   const supabase = await createSupabaseServerClient();
 
@@ -133,6 +159,7 @@ export async function bulkUploadSpas(
   let created = 0;
   let geocodeCallsUsed = 0;
   const geocoder = getGeocodingProvider();
+  const geocodeStartedAt = Date.now();
 
   for (let i = 0; i < records.length; i += 1) {
     const rowNumber = i + 2; // +1 for 0-index, +1 for the header row
@@ -192,17 +219,35 @@ export async function bulkUploadSpas(
         });
         continue;
       }
-      if (geocodeCallsUsed >= MAX_GEOCODE_CALLS) {
+      if (
+        geocodeCallsUsed >= MAX_GEOCODE_CALLS ||
+        Date.now() - geocodeStartedAt >= GEOCODE_TIME_BUDGET_MS
+      ) {
         rowErrors.push({
           row: rowNumber,
           businessName: businessNameForErrors,
-          message: `Missing coordinates — the ${MAX_GEOCODE_CALLS}-geocode-per-upload limit was reached. Re-run the upload with just the remaining rows.`,
+          message: `Missing coordinates — the per-upload geocoding budget was reached. Re-run the upload for the remaining rows.`,
         });
         continue;
       }
       geocodeCallsUsed += 1;
       if (geocodeCallsUsed > 1) await sleep(GEOCODE_DELAY_MS);
-      const [match] = await geocoder.searchAddress(query);
+
+      let match: GeocodeResult | undefined;
+      try {
+        [match] = await geocoder.searchAddress(query);
+      } catch (geocodeErr) {
+        logger.warn('Geocoding request failed', {
+          row: rowNumber,
+          message: geocodeErr instanceof Error ? geocodeErr.message : String(geocodeErr),
+        });
+        rowErrors.push({
+          row: rowNumber,
+          businessName: businessNameForErrors,
+          message: `Geocoding request failed (network error) for "${query}" — add coordinates manually.`,
+        });
+        continue;
+      }
       if (!match) {
         rowErrors.push({
           row: rowNumber,

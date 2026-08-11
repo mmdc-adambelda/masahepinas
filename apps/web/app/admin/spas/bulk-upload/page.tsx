@@ -41,7 +41,7 @@ const CSV_COLUMNS = [
   { name: 'postal_code' },
   {
     name: 'latitude',
-    note: 'if blank (with longitude), geocoded automatically from the address — best-effort, rate-limited to ~45 lookups per upload',
+    note: 'if blank (with longitude), geocoded automatically from the address — best-effort, rate-limited to roughly 15-18 lookups per upload',
   },
   { name: 'longitude', note: 'see latitude' },
   {
@@ -82,11 +82,12 @@ export default async function AdminBulkUploadSpasPage() {
           — everything else has a fallback: missing description/region are auto-generated,
           missing address/city are borrowed from the geocoded result or the province
           itself, and missing coordinates are best-effort geocoded from whatever address
-          is available (capped at ~45 lookups per upload to respect the geocoding
-          provider&apos;s rate limit — if more rows than that need it, re-run the upload
-          again for the remainder once the first pass finishes). Business hours and
-          services aren&apos;t set by the import — add those afterward from the listing,
-          or leave them for the eventual owner to fill in when they claim it.
+          is available (capped at roughly 15-18 lookups per upload (a time budget, not a
+          fixed count) to respect the geocoding provider&apos;s rate limit — if more rows
+          than that need it, re-run the upload again for the remainder once the first pass
+          finishes). Business hours and services aren&apos;t set by the import — add those
+          afterward from the listing, or leave them for the eventual owner to fill in when
+          they claim it.
         </p>
         <p className="text-sm text-foreground-secondary">
           <code>owner_name</code>, <code>owner_phone</code>, and <code>owner_email</code>{' '}
