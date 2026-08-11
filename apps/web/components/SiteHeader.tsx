@@ -15,12 +15,12 @@ export async function SiteHeader() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
         <Link href="/" className="shrink-0">
           <Image
-            src="/logo-banner-green-bg.png"
+            src="/mp-header-logo.png"
             alt={APP_NAME}
-            width={1408}
-            height={768}
+            width={250}
+            height={100}
             priority
-            className="h-10 w-auto sm:h-12"
+            className="h-8 w-auto sm:h-9"
           />
         </Link>
         <nav className="flex flex-wrap items-center gap-4 text-sm text-foreground-secondary">
