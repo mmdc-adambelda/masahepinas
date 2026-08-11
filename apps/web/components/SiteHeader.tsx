@@ -27,9 +27,6 @@ export async function SiteHeader() {
           <Link href="/search" className="hover:text-foreground">
             Search
           </Link>
-          <Link href="/map" className="hover:text-foreground">
-            Map
-          </Link>
           {session ? (
             <>
               <Link href="/saved" className="hover:text-foreground">

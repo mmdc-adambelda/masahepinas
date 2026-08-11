@@ -7,12 +7,11 @@ import { searchListings, type ListingSummary } from '@/lib/spa-businesses';
 /**
  * A real interactive native map (MapLibre React Native) needs a custom
  * native module, which doesn't run in Expo Go — it requires an EAS
- * development build (see docs/development-roadmap.md Post-MVP backlog:
- * "Alternate map/geocoding provider swap" tracks the broader map work).
- * Until that dev-client build exists, this screen gives the same
- * location-sorted results as a distance-ordered list so Map remains
- * useful rather than a dead end. The web app already has a full
- * interactive MapLibre GL map (apps/web/components/DiscoveryMap.tsx).
+ * development build. The web app's map-discovery UI has been retired in
+ * favor of province-based listing (see apps/web/components/SearchFilters.tsx),
+ * and this screen follows the same direction: it shows the same
+ * location-sorted results as a distance-ordered list rather than an
+ * interactive map.
  */
 export default function MapScreen() {
   const [results, setResults] = useState<ListingSummary[]>([]);

@@ -3,15 +3,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
-const STATIC_ROUTES = [
-  '',
-  '/search',
-  '/map',
-  '/premium',
-  '/terms',
-  '/privacy',
-  '/sign-up',
-];
+const STATIC_ROUTES = ['', '/search', '/premium', '/terms', '/privacy', '/sign-up'];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createSupabaseServerClient();

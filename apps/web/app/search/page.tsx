@@ -31,12 +31,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
 
   return (
     <main className="mx-auto max-w-6xl space-y-6 px-6 py-12">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-foreground">Search</h1>
-        <Link href="/map" className="btn-secondary">
-          Map view
-        </Link>
-      </div>
+      <h1 className="text-2xl font-semibold text-foreground">Search</h1>
 
       <SearchFilters />
 

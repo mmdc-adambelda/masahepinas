@@ -35,9 +35,6 @@ export default async function HomePage() {
         </form>
 
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <Link href="/map" className="btn-secondary">
-            Map discovery
-          </Link>
           <Link href="/sign-up" className="btn-secondary">
             Create an account
           </Link>
@@ -96,11 +93,6 @@ export default async function HomePage() {
           List your spa
         </Link>
       </section>
-
-      <p className="text-center text-xs text-foreground-secondary">
-        Directory, search, and reviews are under active development. See{' '}
-        <code className="text-foreground">docs/development-roadmap.md</code>.
-      </p>
     </main>
   );
 }

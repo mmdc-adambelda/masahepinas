@@ -111,6 +111,35 @@ export const PH_PROVINCE_TO_REGION: Record<string, string> = {
   'tawi-tawi': 'BARMM',
 };
 
+// Connector words that stay lowercase in a Philippine province name
+// (e.g. "Davao del Norte", "Maguindanao del Sur") unless they're the
+// first word.
+const LOWERCASE_CONNECTORS = new Set(['del', 'de']);
+
+function titleCaseProvince(lowercaseName: string): string {
+  return lowercaseName
+    .split(' ')
+    .map((word, index) =>
+      index > 0 && LOWERCASE_CONNECTORS.has(word)
+        ? word
+        : word.charAt(0).toUpperCase() + word.slice(1),
+    )
+    .join(' ');
+}
+
+/** Canonical, properly-capitalized list of Philippine provinces (plus
+ * Metro Manila, treated as a province-equivalent for filtering purposes)
+ * for use in a province `<select>`. Derived from
+ * `PH_PROVINCE_TO_REGION`'s keys, sorted alphabetically, with the `ncr`
+ * alias for Metro Manila excluded. */
+export const PH_PROVINCES: string[] = Array.from(
+  new Set(
+    Object.keys(PH_PROVINCE_TO_REGION)
+      .filter((key) => key !== 'ncr')
+      .map(titleCaseProvince),
+  ),
+).sort((a, b) => a.localeCompare(b));
+
 /** Looks up the region for a province name (case-insensitive, tolerant
  * of surrounding whitespace). Returns null if the province isn't
  * recognized. */
