@@ -74,6 +74,21 @@ export default async function HomePage() {
           <li>✓ Transparent, logged moderation</li>
           <li>✓ Legitimate wellness services only</li>
         </ul>
+        <p className="text-sm text-foreground-secondary">
+          Learn more about how {APP_NAME} works on our{' '}
+          <Link href="/about" className="text-brand-accent hover:underline">
+            about page
+          </Link>
+          , or read local guides like the{' '}
+          <Link href="/blogs/cavite-spa" className="text-brand-accent hover:underline">
+            Cavite spa guide
+          </Link>{' '}
+          on our{' '}
+          <Link href="/blogs" className="text-brand-accent hover:underline">
+            blog
+          </Link>
+          .
+        </p>
       </section>
 
       <section className="card flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">

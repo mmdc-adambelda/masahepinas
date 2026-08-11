@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { APP_NAME, APP_TAGLINE } from '@masahepinas/config';
 import { SiteHeader } from '@/components/SiteHeader';
+import { SiteFooter } from '@/components/SiteFooter';
 import './globals.css';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         <SiteHeader />
         <div id="main-content">{children}</div>
+        <SiteFooter />
       </body>
     </html>
   );
