@@ -2,7 +2,7 @@
 -- Masahe Pinas — RLS / Permission Boundary Test Suite (Phase 8)
 -- =====================================================================
 -- Purpose: exercise the row-level-security policies from migrations
--- 0001-0014 as each of the app's real personas (guest/anon, customer,
+-- 0001-0017 as each of the app's real personas (guest/anon, customer,
 -- a second customer, spa_owner, moderator, superadmin) and assert the
 -- expected allow/deny outcome for the boundary cases called out in
 -- docs/security-checklist.md and docs/permissions.md.
@@ -252,6 +252,11 @@ select pg_temp.expect_denied(
   $q$update public.spa_businesses set is_recommended = true where id = '00000000-0000-0000-0000-0000000000b1'$q$
 );
 
+select pg_temp.expect_denied(
+  'moderator (staff, not superadmin) cannot soft-delete a listing (0017 tightening)',
+  $q$update public.spa_businesses set deleted_at = now() where id = '00000000-0000-0000-0000-0000000000b1'$q$
+);
+
 reset role;
 
 set local role authenticated;
@@ -264,6 +269,13 @@ select pg_temp.expect_rows(
 );
 update public.spa_businesses set is_recommended = false, recommended_by = null, recommended_at = null
   where id = '00000000-0000-0000-0000-0000000000b1';
+
+select pg_temp.expect_rows(
+  'superadmin can soft-delete a listing',
+  $q$update public.spa_businesses set deleted_at = now() where id = '00000000-0000-0000-0000-0000000000b1'$q$,
+  1
+);
+update public.spa_businesses set deleted_at = null where id = '00000000-0000-0000-0000-0000000000b1';
 
 reset role;
 

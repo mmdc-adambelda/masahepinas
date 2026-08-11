@@ -159,16 +159,18 @@ export default function SpaDetailScreen() {
             <Text style={styles.actionButtonText}>Call</Text>
           </Pressable>
         ) : null}
-        <Pressable
-          style={styles.actionButton}
-          onPress={() =>
-            Linking.openURL(
-              `https://www.openstreetmap.org/directions?to=${listing.latitude}%2C${listing.longitude}`,
-            )
-          }
-        >
-          <Text style={styles.actionButtonText}>Directions</Text>
-        </Pressable>
+        {listing.latitude != null && listing.longitude != null ? (
+          <Pressable
+            style={styles.actionButton}
+            onPress={() =>
+              Linking.openURL(
+                `https://www.openstreetmap.org/directions?to=${listing.latitude}%2C${listing.longitude}`,
+              )
+            }
+          >
+            <Text style={styles.actionButtonText}>Directions</Text>
+          </Pressable>
+        ) : null}
         {session ? (
           <Pressable
             style={[styles.actionButton, saved ? styles.actionButtonActive : null]}

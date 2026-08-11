@@ -37,12 +37,17 @@ export default async function MapDiscoveryPage({ searchParams }: PageProps) {
       </div>
 
       <DiscoveryMap
-        pins={results.rows.map((row) => ({
-          slug: row.slug,
-          businessName: row.businessName,
-          latitude: row.latitude,
-          longitude: row.longitude,
-        }))}
+        pins={results.rows
+          .filter(
+            (row): row is typeof row & { latitude: number; longitude: number } =>
+              row.latitude != null && row.longitude != null,
+          )
+          .map((row) => ({
+            slug: row.slug,
+            businessName: row.businessName,
+            latitude: row.latitude,
+            longitude: row.longitude,
+          }))}
       />
 
       {results.rows.length > 0 ? (

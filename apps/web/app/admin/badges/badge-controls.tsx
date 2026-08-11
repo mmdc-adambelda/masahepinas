@@ -14,13 +14,25 @@ export function CreateBadgeForm() {
         <label htmlFor="slug" className="text-sm text-foreground-secondary">
           Slug
         </label>
-        <input id="slug" name="slug" required placeholder="community-contributor" className="input-field" />
+        <input
+          id="slug"
+          name="slug"
+          required
+          placeholder="community-contributor"
+          className="input-field"
+        />
       </div>
       <div className="space-y-1.5">
         <label htmlFor="name" className="text-sm text-foreground-secondary">
           Name
         </label>
-        <input id="name" name="name" required placeholder="Community Contributor" className="input-field" />
+        <input
+          id="name"
+          name="name"
+          required
+          placeholder="Community Contributor"
+          className="input-field"
+        />
       </div>
       <div className="col-span-2 space-y-1.5">
         <label htmlFor="description" className="text-sm text-foreground-secondary">
@@ -34,7 +46,9 @@ export function CreateBadgeForm() {
         </label>
         <input id="tier" name="tier" type="number" min={1} className="input-field" />
       </div>
-      {state.error ? <p className="col-span-2 text-sm text-danger">{state.error}</p> : null}
+      {state.error ? (
+        <p className="col-span-2 text-sm text-danger">{state.error}</p>
+      ) : null}
       <button type="submit" className="btn-primary col-span-2" disabled={isPending}>
         {isPending ? 'Creating…' : 'Create badge'}
       </button>

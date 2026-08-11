@@ -2,13 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { businessDetailsSchema, locationSchema } from '@masahepinas/validation';
-import {
-  parseCsvRecords,
-  slugify,
-  getGeocodingProvider,
-  logger,
-  type GeocodeResult,
-} from '@masahepinas/utils';
+import { parseCsvRecords, slugify, logger } from '@masahepinas/utils';
 import { lookupPhRegion } from '@masahepinas/config';
 import { requireSuperadmin } from '@/lib/auth';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
@@ -25,7 +19,7 @@ export interface BulkUploadResult {
     totalRows: number;
     created: number;
     failed: number;
-    geocoded: number;
+    withoutCoordinates: number;
   };
   rowErrors?: BulkUploadRowError[];
 }
@@ -34,29 +28,11 @@ const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
 const MAX_ROWS = 500;
 const LISTING_STATUSES = ['pending_review', 'verified', 'unverified'] as const;
 
-// Nominatim's public-instance usage policy caps requests at ~1/second and
-// asks that it not be used for heavy/bulk geocoding. MAX_GEOCODE_CALLS is
-// a secondary cap; GEOCODE_TIME_BUDGET_MS below is the real limiting
-// factor in practice, kept well under this route's maxDuration (see
-// page.tsx) so the request finishes gracefully rather than being
-// force-killed by the platform (which shows up as an uncaught-crash
-// error page, not a normal validation failure). Rows past either limit,
-// or whose address can't be resolved, are reported as row errors —
-// re-running the upload picks up the remaining rows, but don't re-run it
-// against rows that already succeeded (they aren't deduped by business
-// identity, only by slug collision).
-const MAX_GEOCODE_CALLS = 45;
-const GEOCODE_DELAY_MS = 1100;
-// Belt-and-suspenders alongside MAX_GEOCODE_CALLS: stop attempting new
-// geocode lookups once this much wall-clock time has elapsed, regardless
-// of call count, so a slow network doesn't run the whole request past
-// the platform's function-duration limit (which — unlike a validation
-// failure — surfaces as an unhandled crash, not a graceful error).
-const GEOCODE_TIME_BUDGET_MS = 20_000;
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+// Location fields validated without latitude/longitude — those are
+// handled separately below since they're optional here (see
+// parseOptionalCoordinate), unlike the map-picker-based submission flows
+// that still use the full locationSchema with required coordinates.
+const bulkLocationSchema = locationSchema.omit({ latitude: true, longitude: true });
 
 /** Strips everything except a leading '+' and digits, so "0965 937 3768"
  * or "(0965) 937-3768" both normalize to "09659373768" before validation
@@ -77,17 +53,19 @@ function fallbackDescription(
   return `${businessName} — massage and spa services${location ? ` in ${location}` : ''}, Philippines. (Description auto-generated at import; edit for accuracy.)`;
 }
 
-function buildGeocodeQuery(record: Record<string, string>): string | null {
-  const parts = [
-    record.address_line,
-    record.barangay,
-    record.city_municipality,
-    record.province,
-  ]
-    .map((p) => p?.trim())
-    .filter((p): p is string => Boolean(p));
-  if (parts.length === 0) return null;
-  return `${parts.join(', ')}, Philippines`;
+/** Returns a valid latitude/longitude number, or null if the cell was
+ * blank/unusable — never blocks the row. `add coordinates manually
+ * later" is the fallback, not a hard requirement (see the "no
+ * geocoding" decision this shipped from). */
+function parseOptionalCoordinate(
+  raw: string | undefined,
+  min: number,
+  max: number,
+): number | null {
+  if (!raw || raw.trim() === '') return null;
+  const value = Number(raw);
+  if (Number.isNaN(value) || value < min || value > max) return null;
+  return value;
 }
 
 /**
@@ -100,13 +78,15 @@ function buildGeocodeQuery(record: Record<string, string>): string | null {
  * rows failed and why (naming the specific field, not just "Required").
  *
  * Only business_name, contact_number, and province are actually
- * required — every other field tolerates common gaps in scraped/
- * exported listing data: missing description (auto-generated), missing
- * city/address/region (borrowed from the geocode result or the
- * province itself), phone numbers with spaces/punctuation (normalized),
- * and missing coordinates (best-effort geocoded from whatever address
- * fragments are present — see MAX_GEOCODE_CALLS). owner_name/owner_
- * phone/owner_email are optional, staff-only reference fields stored in
+ * required — every other field tolerates gaps in scraped/exported
+ * listing data: missing description (auto-generated), missing region
+ * (looked up from province), missing city/address (falls back to the
+ * province itself), and phone numbers with spaces/punctuation
+ * (normalized). Coordinates are used as-is if present and never
+ * geocoded — a row with no lat/lng still imports, it just won't show a
+ * map or appear in "near me" search until someone adds coordinates
+ * later (see docs/moderation-ops-guide.md). owner_name/owner_phone/
+ * owner_email are optional, staff-only reference fields stored in
  * business_internal_contacts (never public) so admins can reach out
  * about claiming the listing.
  */
@@ -117,16 +97,16 @@ export async function bulkUploadSpas(
   try {
     return await runBulkUpload(formData);
   } catch (err) {
-    // Anything unexpected here (a network blip mid-geocode, a timeout, a
-    // bug) must never crash the whole request — that surfaces to the
-    // admin as the generic "Something went wrong" error boundary with no
-    // way to tell what happened. Always return a graceful result instead.
+    // Anything unexpected here must never crash the whole request — that
+    // surfaces to the admin as the generic "Something went wrong" error
+    // boundary with no useful information. Always return a graceful
+    // result instead.
     logger.error('bulkUploadSpas crashed', {
       message: err instanceof Error ? err.message : String(err),
     });
     return {
       error:
-        'Something went wrong partway through the upload (possibly a network issue while geocoding). Any rows already created are saved — check /admin/listings, then re-run the upload for the rest.',
+        'Something went wrong partway through the upload. Any rows already created are saved — check /admin/listings, then re-run the upload for the rest.',
     };
   }
 }
@@ -157,9 +137,7 @@ async function runBulkUpload(formData: FormData): Promise<BulkUploadResult> {
 
   const rowErrors: BulkUploadRowError[] = [];
   let created = 0;
-  let geocodeCallsUsed = 0;
-  const geocoder = getGeocodingProvider();
-  const geocodeStartedAt = Date.now();
+  let withoutCoordinates = 0;
 
   for (let i = 0; i < records.length; i += 1) {
     const rowNumber = i + 2; // +1 for 0-index, +1 for the header row
@@ -199,94 +177,26 @@ async function runBulkUpload(formData: FormData): Promise<BulkUploadResult> {
       continue;
     }
 
-    let latitude = Number(record.latitude);
-    let longitude = Number(record.longitude);
-    let geocodeMatch: GeocodeResult | null = null;
-    const needsGeocoding =
-      record.latitude?.trim() === '' ||
-      record.longitude?.trim() === '' ||
-      Number.isNaN(latitude) ||
-      Number.isNaN(longitude);
-
-    if (needsGeocoding) {
-      const query = buildGeocodeQuery(record);
-      if (!query) {
-        rowErrors.push({
-          row: rowNumber,
-          businessName: businessNameForErrors,
-          message:
-            'Missing latitude/longitude and no address to geocode from — add coordinates manually.',
-        });
-        continue;
-      }
-      if (
-        geocodeCallsUsed >= MAX_GEOCODE_CALLS ||
-        Date.now() - geocodeStartedAt >= GEOCODE_TIME_BUDGET_MS
-      ) {
-        rowErrors.push({
-          row: rowNumber,
-          businessName: businessNameForErrors,
-          message: `Missing coordinates — the per-upload geocoding budget was reached. Re-run the upload for the remaining rows.`,
-        });
-        continue;
-      }
-      geocodeCallsUsed += 1;
-      if (geocodeCallsUsed > 1) await sleep(GEOCODE_DELAY_MS);
-
-      let match: GeocodeResult | undefined;
-      try {
-        [match] = await geocoder.searchAddress(query);
-      } catch (geocodeErr) {
-        logger.warn('Geocoding request failed', {
-          row: rowNumber,
-          message: geocodeErr instanceof Error ? geocodeErr.message : String(geocodeErr),
-        });
-        rowErrors.push({
-          row: rowNumber,
-          businessName: businessNameForErrors,
-          message: `Geocoding request failed (network error) for "${query}" — add coordinates manually.`,
-        });
-        continue;
-      }
-      if (!match) {
-        rowErrors.push({
-          row: rowNumber,
-          businessName: businessNameForErrors,
-          message: `Could not geocode "${query}" — add coordinates manually.`,
-        });
-        continue;
-      }
-      geocodeMatch = match;
-      latitude = match.latitude;
-      longitude = match.longitude;
-    }
-
     // Only business_name, contact_number, and province are truly required
-    // (per the admin's call) — everything else here has a fallback so a
-    // sparse scraped-data row still imports rather than failing on a
-    // field nobody actually asked for.
+    // — everything else here has a fallback so a sparse scraped-data row
+    // still imports rather than failing on a field nobody asked for.
     const province = record.province?.trim() ?? '';
     const region = record.region?.trim() || lookupPhRegion(province) || 'Philippines';
-    // For rows missing city_municipality/address_line entirely (common for
-    // "home service, no fixed storefront" businesses that only give a
-    // province) — borrow the geocode result's structured fields, then
-    // fall back to the province itself, rather than failing the row.
-    const cityMunicipality =
-      record.city_municipality?.trim() || geocodeMatch?.cityMunicipality || province;
+    const cityMunicipality = record.city_municipality?.trim() || province;
     const addressLine =
       record.address_line?.trim() ||
-      geocodeMatch?.addressLine ||
       [cityMunicipality, province].filter(Boolean).join(', ');
+    const latitude = parseOptionalCoordinate(record.latitude, -90, 90);
+    const longitude = parseOptionalCoordinate(record.longitude, -180, 180);
+    if (latitude == null || longitude == null) withoutCoordinates += 1;
 
-    const locationParsed = locationSchema.safeParse({
+    const locationParsed = bulkLocationSchema.safeParse({
       addressLine,
-      barangay: record.barangay || geocodeMatch?.barangay || '',
+      barangay: record.barangay || '',
       cityMunicipality,
       province,
       region,
-      postalCode: record.postal_code || geocodeMatch?.postalCode || '',
-      latitude,
-      longitude,
+      postalCode: record.postal_code || '',
     });
     if (!locationParsed.success) {
       const issue = locationParsed.error.issues[0];
@@ -359,8 +269,8 @@ async function runBulkUpload(formData: FormData): Promise<BulkUploadResult> {
       province: locationParsed.data.province,
       region: locationParsed.data.region,
       postal_code: locationParsed.data.postalCode || null,
-      latitude: locationParsed.data.latitude,
-      longitude: locationParsed.data.longitude,
+      latitude,
+      longitude,
     });
     if (locationError) {
       rowErrors.push({
@@ -399,12 +309,13 @@ async function runBulkUpload(formData: FormData): Promise<BulkUploadResult> {
       total_rows: records.length,
       created,
       failed: rowErrors.length,
-      geocoded: geocodeCallsUsed,
+      without_coordinates: withoutCoordinates,
     },
   });
 
   revalidatePath('/admin/spas/bulk-upload');
   revalidatePath('/admin');
+  revalidatePath('/admin/listings');
 
   return {
     error: null,
@@ -412,7 +323,7 @@ async function runBulkUpload(formData: FormData): Promise<BulkUploadResult> {
       totalRows: records.length,
       created,
       failed: rowErrors.length,
-      geocoded: geocodeCallsUsed,
+      withoutCoordinates,
     },
     rowErrors: rowErrors.slice(0, 100),
   };

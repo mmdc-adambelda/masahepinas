@@ -6,7 +6,10 @@ import { addFeaturedPlacement, type FeaturedResult } from './actions';
 const initialState: FeaturedResult = { error: null };
 
 export function AddFeaturedForm() {
-  const [state, formAction, isPending] = useActionState(addFeaturedPlacement, initialState);
+  const [state, formAction, isPending] = useActionState(
+    addFeaturedPlacement,
+    initialState,
+  );
 
   return (
     <form action={formAction} className="card space-y-3">
@@ -16,13 +19,25 @@ export function AddFeaturedForm() {
           <label htmlFor="slug" className="text-sm text-foreground-secondary">
             Listing slug
           </label>
-          <input id="slug" name="slug" required placeholder="serenity-leaf-spa-makati" className="input-field" />
+          <input
+            id="slug"
+            name="slug"
+            required
+            placeholder="serenity-leaf-spa-makati"
+            className="input-field"
+          />
         </div>
         <div className="space-y-1.5">
           <label htmlFor="placementKey" className="text-sm text-foreground-secondary">
             Placement key
           </label>
-          <input id="placementKey" name="placementKey" required placeholder="homepage_highly_rated" className="input-field" />
+          <input
+            id="placementKey"
+            name="placementKey"
+            required
+            placeholder="homepage_highly_rated"
+            className="input-field"
+          />
         </div>
       </div>
       {state.error ? <p className="text-sm text-danger">{state.error}</p> : null}

@@ -35,9 +35,9 @@ export function BulkUploadForm() {
               {state.summary.totalRows} row{state.summary.totalRows === 1 ? '' : 's'}
             </span>
             <span className="text-brand-accent">{state.summary.created} created</span>
-            {state.summary.geocoded > 0 ? (
+            {state.summary.withoutCoordinates > 0 ? (
               <span className="text-foreground-secondary">
-                {state.summary.geocoded} geocoded
+                {state.summary.withoutCoordinates} without coordinates (no map pin yet)
               </span>
             ) : null}
             {state.summary.failed > 0 ? (

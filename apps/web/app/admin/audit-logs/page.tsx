@@ -1,6 +1,7 @@
 import { formatRelativeDate } from '@masahepinas/utils';
 import { requireSuperadmin } from '@/lib/auth';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { AdminBackLink } from '../back-link';
 
 export const metadata = { title: 'Audit logs' };
 
@@ -16,6 +17,7 @@ export default async function AdminAuditLogsPage() {
 
   return (
     <main className="mx-auto max-w-4xl space-y-6 px-6 py-12">
+      <AdminBackLink />
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold text-foreground">Audit logs</h1>
         <p className="text-sm text-foreground-secondary">

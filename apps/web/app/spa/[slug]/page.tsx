@@ -88,11 +88,15 @@ export default async function SpaListingPage({ params }: PageProps) {
       postalCode: listing.location.postalCode ?? undefined,
       addressCountry: 'PH',
     },
-    geo: {
-      '@type': 'GeoCoordinates',
-      latitude: listing.location.latitude,
-      longitude: listing.location.longitude,
-    },
+    ...(listing.location.latitude != null && listing.location.longitude != null
+      ? {
+          geo: {
+            '@type': 'GeoCoordinates',
+            latitude: listing.location.latitude,
+            longitude: listing.location.longitude,
+          },
+        }
+      : {}),
     // AggregateRating is intentionally omitted until reviewCount > 0 (Phase
     // 3) — never publish rating schema without real reviews backing it,
     // per docs/product-requirements.md §19.
@@ -200,16 +204,18 @@ export default async function SpaListingPage({ params }: PageProps) {
             Call {listing.contactNumber}
           </TrackedLink>
         ) : null}
-        <TrackedLink
-          eventType="directions_click"
-          businessId={listing.id}
-          href={`https://www.openstreetmap.org/directions?to=${listing.location.latitude}%2C${listing.location.longitude}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-secondary"
-        >
-          Get directions
-        </TrackedLink>
+        {listing.location.latitude != null && listing.location.longitude != null ? (
+          <TrackedLink
+            eventType="directions_click"
+            businessId={listing.id}
+            href={`https://www.openstreetmap.org/directions?to=${listing.location.latitude}%2C${listing.location.longitude}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary"
+          >
+            Get directions
+          </TrackedLink>
+        ) : null}
         <SavedToggle
           businessId={listing.id}
           slug={listing.slug}
@@ -284,14 +290,16 @@ export default async function SpaListingPage({ params }: PageProps) {
         </table>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold text-foreground">Location</h2>
-        <ListingMap
-          latitude={listing.location.latitude}
-          longitude={listing.location.longitude}
-          label={listing.businessName}
-        />
-      </section>
+      {listing.location.latitude != null && listing.location.longitude != null ? (
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold text-foreground">Location</h2>
+          <ListingMap
+            latitude={listing.location.latitude}
+            longitude={listing.location.longitude}
+            label={listing.businessName}
+          />
+        </section>
+      ) : null}
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-foreground">Reviews</h2>

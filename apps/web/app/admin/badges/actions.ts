@@ -8,7 +8,10 @@ export interface BadgeResult {
   error: string | null;
 }
 
-export async function createBadge(_prevState: BadgeResult, formData: FormData): Promise<BadgeResult> {
+export async function createBadge(
+  _prevState: BadgeResult,
+  formData: FormData,
+): Promise<BadgeResult> {
   await requireSuperadmin();
   const supabase = await createSupabaseServerClient();
 

@@ -1,12 +1,9 @@
 import Link from 'next/link';
 import { requireSuperadmin } from '@/lib/auth';
+import { AdminBackLink } from '../../back-link';
 import { BulkUploadForm } from './bulk-upload-form';
 
 export const metadata = { title: 'Bulk upload spa listings (admin)' };
-// Rows missing coordinates are best-effort geocoded (rate-limited to
-// comply with Nominatim's usage policy — see actions.ts), which can take
-// close to a minute for a full batch; extend past the platform default.
-export const maxDuration = 60;
 
 const CSV_COLUMNS = [
   { name: 'business_name', required: true },
@@ -27,21 +24,18 @@ const CSV_COLUMNS = [
   { name: 'website_url' },
   { name: 'booking_contact_number' },
   { name: 'social_media_url' },
-  {
-    name: 'address_line',
-    note: 'if blank, filled from the geocoded result or city/province',
-  },
+  { name: 'address_line', note: 'if blank, filled from city/province' },
   { name: 'barangay' },
   {
     name: 'city_municipality',
-    note: 'if blank, filled from the geocoded result — leave blank for a home-service business with no fixed storefront',
+    note: 'if blank, filled from province — fine for a home-service business with no fixed storefront',
   },
   { name: 'province', required: true },
   { name: 'region', note: 'auto-filled from province if left blank' },
   { name: 'postal_code' },
   {
     name: 'latitude',
-    note: 'if blank (with longitude), geocoded automatically from the address — best-effort, rate-limited to roughly 15-18 lookups per upload',
+    note: 'used as-is if present, otherwise left blank — never geocoded. Without it the listing won’t show a map or appear in "near me" search until someone adds coordinates',
   },
   { name: 'longitude', note: 'see latitude' },
   {
@@ -61,6 +55,7 @@ export default async function AdminBulkUploadSpasPage() {
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-16">
+      <AdminBackLink />
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold text-foreground">
           Bulk upload spa listings
@@ -80,14 +75,12 @@ export default async function AdminBulkUploadSpasPage() {
             Only business_name, contact_number, and province are actually required
           </strong>{' '}
           — everything else has a fallback: missing description/region are auto-generated,
-          missing address/city are borrowed from the geocoded result or the province
-          itself, and missing coordinates are best-effort geocoded from whatever address
-          is available (capped at roughly 15-18 lookups per upload (a time budget, not a
-          fixed count) to respect the geocoding provider&apos;s rate limit — if more rows
-          than that need it, re-run the upload again for the remainder once the first pass
-          finishes). Business hours and services aren&apos;t set by the import — add those
-          afterward from the listing, or leave them for the eventual owner to fill in when
-          they claim it.
+          and missing address/city fall back to the province itself. Coordinates are taken
+          as-is if present and are never geocoded — a row with no lat/lng still imports
+          fine, it just won&apos;t appear on the map or in &quot;near me&quot; search
+          until someone adds coordinates from the listing later. Business hours and
+          services aren&apos;t set by the import — add those afterward from the listing,
+          or leave them for the eventual owner to fill in when they claim it.
         </p>
         <p className="text-sm text-foreground-secondary">
           <code>owner_name</code>, <code>owner_phone</code>, and <code>owner_email</code>{' '}

@@ -1,5 +1,6 @@
 import { requireSuperadmin } from '@/lib/auth';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { AdminBackLink } from '../back-link';
 import { CreateServiceForm, ToggleActiveButton } from './service-controls';
 
 export const metadata = { title: 'Service category management' };
@@ -7,11 +8,17 @@ export const metadata = { title: 'Service category management' };
 export default async function AdminServicesPage() {
   await requireSuperadmin();
   const supabase = await createSupabaseServerClient();
-  const { data: categories } = await supabase.from('service_categories').select('*').order('name');
+  const { data: categories } = await supabase
+    .from('service_categories')
+    .select('*')
+    .order('name');
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
-      <h1 className="text-2xl font-semibold text-foreground">Service category management</h1>
+      <AdminBackLink />
+      <h1 className="text-2xl font-semibold text-foreground">
+        Service category management
+      </h1>
 
       <CreateServiceForm />
 
@@ -21,7 +28,9 @@ export default async function AdminServicesPage() {
             <div>
               <p className="font-medium text-foreground">
                 {category.name}{' '}
-                <span className={`text-xs ${category.is_active ? 'text-brand-accent' : 'text-foreground-secondary'}`}>
+                <span
+                  className={`text-xs ${category.is_active ? 'text-brand-accent' : 'text-foreground-secondary'}`}
+                >
                   {category.is_active ? 'Active' : 'Inactive'}
                 </span>
               </p>

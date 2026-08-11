@@ -1,12 +1,19 @@
 'use client';
 
 import { useActionState, useTransition } from 'react';
-import { createServiceCategory, toggleServiceCategoryActive, type ServiceCategoryResult } from './actions';
+import {
+  createServiceCategory,
+  toggleServiceCategoryActive,
+  type ServiceCategoryResult,
+} from './actions';
 
 const initialState: ServiceCategoryResult = { error: null };
 
 export function CreateServiceForm() {
-  const [state, formAction, isPending] = useActionState(createServiceCategory, initialState);
+  const [state, formAction, isPending] = useActionState(
+    createServiceCategory,
+    initialState,
+  );
 
   return (
     <form action={formAction} className="card space-y-3">
@@ -15,7 +22,13 @@ export function CreateServiceForm() {
           <label htmlFor="name" className="text-sm text-foreground-secondary">
             Service name
           </label>
-          <input id="name" name="name" required placeholder="Hilot" className="input-field" />
+          <input
+            id="name"
+            name="name"
+            required
+            placeholder="Hilot"
+            className="input-field"
+          />
         </div>
         <div className="space-y-1.5">
           <label htmlFor="description" className="text-sm text-foreground-secondary">
@@ -32,7 +45,13 @@ export function CreateServiceForm() {
   );
 }
 
-export function ToggleActiveButton({ categoryId, isActive }: { categoryId: string; isActive: boolean }) {
+export function ToggleActiveButton({
+  categoryId,
+  isActive,
+}: {
+  categoryId: string;
+  isActive: boolean;
+}) {
   const [isPending, startTransition] = useTransition();
   return (
     <button

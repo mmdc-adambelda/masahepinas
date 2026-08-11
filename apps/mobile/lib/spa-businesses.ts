@@ -19,8 +19,10 @@ export interface ListingSummary {
   priceRange: string | null;
   cityMunicipality: string;
   province: string;
-  latitude: number;
-  longitude: number;
+  /** Null when the listing has no pinned coordinates (e.g. imported
+   * without them) — such listings show address/city text but no map pin. */
+  latitude: number | null;
+  longitude: number | null;
   primaryImageUrl: string | null;
 }
 

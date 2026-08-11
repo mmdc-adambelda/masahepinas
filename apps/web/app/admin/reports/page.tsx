@@ -2,6 +2,7 @@ import { formatRelativeDate } from '@masahepinas/utils';
 import { requireRole } from '@/lib/auth';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { dismissReport, hideReportedReview, restoreReview } from './actions';
+import { AdminBackLink } from '../back-link';
 import { ModerationForm } from './moderation-form';
 
 export const metadata = { title: 'Content reports (moderator)' };
@@ -48,6 +49,7 @@ export default async function AdminReportsPage() {
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
+      <AdminBackLink />
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold text-foreground">Content reports</h1>
         <p className="text-sm text-foreground-secondary">

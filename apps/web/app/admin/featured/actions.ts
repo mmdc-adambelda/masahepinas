@@ -39,11 +39,16 @@ export async function addFeaturedPlacement(
   return { error: null };
 }
 
-export async function removeFeaturedPlacement(placementId: string): Promise<FeaturedResult> {
+export async function removeFeaturedPlacement(
+  placementId: string,
+): Promise<FeaturedResult> {
   await requireSuperadmin();
   const supabase = await createSupabaseServerClient();
 
-  const { error } = await supabase.from('featured_placements').delete().eq('id', placementId);
+  const { error } = await supabase
+    .from('featured_placements')
+    .delete()
+    .eq('id', placementId);
   if (error) return { error: 'Could not remove the placement.' };
 
   revalidatePath('/admin/featured');

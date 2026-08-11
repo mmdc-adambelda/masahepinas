@@ -181,15 +181,19 @@ export interface AdminListingRow {
 
 export async function listListingsByStatus(
   status: ListingStatus | 'all',
+  search?: string,
 ): Promise<AdminListingRow[]> {
   const supabase = await createSupabaseServerClient();
-  const query = supabase
+  let query = supabase
     .from('spa_businesses')
     .select('id, slug, business_name, status, owner_id, created_at')
     .is('deleted_at', null)
     .order('created_at', { ascending: true });
 
-  const { data } = status === 'all' ? await query : await query.eq('status', status);
+  if (status !== 'all') query = query.eq('status', status);
+  if (search?.trim()) query = query.ilike('business_name', `%${search.trim()}%`);
+
+  const { data } = await query;
   const rows = data ?? [];
 
   // Look up verification documents for the owners on this page and mint a
@@ -287,4 +291,80 @@ export async function listPendingClaims(): Promise<AdminClaimRow[]> {
     notes: row.notes,
     createdAt: row.created_at,
   }));
+}
+
+export interface AdminEditableListing {
+  id: string;
+  businessName: string;
+  description: string | null;
+  contactNumber: string | null;
+  bookingContactNumber: string | null;
+  websiteUrl: string | null;
+  socialMediaUrl: string | null;
+  priceRange: string | null;
+  genderAvailability: string;
+  location: {
+    addressLine: string;
+    barangay: string | null;
+    cityMunicipality: string;
+    province: string;
+    region: string;
+    postalCode: string | null;
+    latitude: number | null;
+    longitude: number | null;
+  } | null;
+}
+
+/** Fetches a single listing (+ its location) for the admin edit form.
+ * Staff-gated at the page level (requireSuperadmin) — this itself relies
+ * on the same is_staff RLS visibility every other admin listing query
+ * uses. */
+export async function getListingForEdit(
+  businessId: string,
+): Promise<AdminEditableListing | null> {
+  const supabase = await createSupabaseServerClient();
+
+  const [{ data: business }, { data: location }] = await Promise.all([
+    supabase
+      .from('spa_businesses')
+      .select(
+        'id, business_name, description, contact_number, booking_contact_number, website_url, social_media_url, price_range, gender_availability',
+      )
+      .eq('id', businessId)
+      .is('deleted_at', null)
+      .maybeSingle(),
+    supabase
+      .from('business_locations')
+      .select(
+        'address_line, barangay, city_municipality, province, region, postal_code, latitude, longitude',
+      )
+      .eq('business_id', businessId)
+      .maybeSingle(),
+  ]);
+
+  if (!business) return null;
+
+  return {
+    id: business.id,
+    businessName: business.business_name,
+    description: business.description,
+    contactNumber: business.contact_number,
+    bookingContactNumber: business.booking_contact_number,
+    websiteUrl: business.website_url,
+    socialMediaUrl: business.social_media_url,
+    priceRange: business.price_range,
+    genderAvailability: business.gender_availability,
+    location: location
+      ? {
+          addressLine: location.address_line,
+          barangay: location.barangay,
+          cityMunicipality: location.city_municipality,
+          province: location.province,
+          region: location.region,
+          postalCode: location.postal_code,
+          latitude: location.latitude,
+          longitude: location.longitude,
+        }
+      : null,
+  };
 }

@@ -34,8 +34,8 @@ export interface SearchResultRow {
   cityMunicipality: string;
   province: string;
   region: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   primaryImageUrl: string | null;
   distanceKm: number | null;
 }

@@ -42,7 +42,7 @@ export function SubmitSpaForm({
   const [state, formAction, isPending] = useActionState(saveWithId, initialState);
 
   const [location, setLocation] = useState<MapPickerValue | null>(
-    business.location
+    business.location?.latitude != null && business.location?.longitude != null
       ? { latitude: business.location.latitude, longitude: business.location.longitude }
       : null,
   );

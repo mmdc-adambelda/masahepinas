@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { formatRelativeDate } from '@masahepinas/utils';
 import { requireRole } from '@/lib/auth';
 import { listPendingClaims } from '@/lib/admin';
+import { AdminBackLink } from '../back-link';
 import { ClaimForm } from './claim-form';
 
 export const metadata = { title: 'Business claims' };
@@ -12,6 +13,7 @@ export default async function AdminClaimsPage() {
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
+      <AdminBackLink />
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold text-foreground">Business claims</h1>
         <p className="text-sm text-foreground-secondary">

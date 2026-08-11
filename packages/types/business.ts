@@ -32,8 +32,11 @@ export interface BusinessLocation {
   province: string;
   region: string;
   postalCode: string | null;
-  latitude: number;
-  longitude: number;
+  /** Null when the listing has no pinned coordinates (e.g. imported
+   * without them) — such listings show address/city text but no map and
+   * are excluded from distance/"near me" search. */
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export interface BusinessHour {

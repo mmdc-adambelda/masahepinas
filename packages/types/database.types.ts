@@ -152,6 +152,7 @@ export interface Database {
           is_recommended?: boolean;
           recommended_by?: string | null;
           recommended_at?: string | null;
+          deleted_at?: string | null;
         };
         Update: Partial<Database['public']['Tables']['spa_businesses']['Insert']>;
         Relationships: [
@@ -174,8 +175,8 @@ export interface Database {
           province: string;
           region: string;
           postal_code: string | null;
-          latitude: number;
-          longitude: number;
+          latitude: number | null;
+          longitude: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -188,8 +189,8 @@ export interface Database {
           province: string;
           region: string;
           postal_code?: string | null;
-          latitude: number;
-          longitude: number;
+          latitude?: number | null;
+          longitude?: number | null;
         };
         Update: Partial<Database['public']['Tables']['business_locations']['Insert']>;
         Relationships: [
@@ -923,8 +924,8 @@ export interface Database {
           city_municipality: string;
           province: string;
           region: string;
-          latitude: number;
-          longitude: number;
+          latitude: number | null;
+          longitude: number | null;
           primary_image_path: string | null;
           distance_km: number | null;
           total_count: number;

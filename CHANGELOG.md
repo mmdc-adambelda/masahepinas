@@ -5,6 +5,50 @@ follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Drop geocoding dependency + admin listings UX overhaul (2026-08-06)
+
+Requested: stop requiring geocoding for bulk upload (accept the CSV as-is),
+consolidate the four-button-per-listing admin UI into one action dropdown,
+add search, add a real delete capability, add an edit page, and add
+back-to-dashboard navigation on every admin subpage.
+
+#### Added
+
+- `supabase/migrations/0016_optional_coordinates.sql`: drops the NOT NULL
+  constraint on `business_locations.latitude`/`longitude`. A listing can
+  now exist with an address/city/province but no map pin — it just won't
+  render a map or appear in distance/"near me" search until someone adds
+  coordinates. Updated the spa detail page, `/map`, and the mobile app to
+  handle this everywhere lat/lng was assumed non-null.
+- Bulk upload no longer calls any geocoding service at all — coordinates
+  are used as-is if present in the CSV, left `null` otherwise. Removes
+  the entire Nominatim-dependent code path (rate limiting, time budgets,
+  network try/catch) that caused the earlier crash.
+- `/admin/listings`: replaced the four always-visible Verify/Reject/
+  Suspend/Archive buttons with one "Choose action…" dropdown + reason +
+  Apply, added a business-name search box, and added a superadmin-only
+  **Delete** action (soft delete via `deleted_at`, logged to
+  `audit_logs`, reversible).
+- `/admin/spas/[id]/edit` (new, superadmin-only): edit any listing's
+  details/location, including clearing coordinates entirely. Exists
+  mainly so bad data from a bulk import (or anywhere else) can be fixed
+  without a database console.
+- `apps/web/app/admin/back-link.tsx` (`AdminBackLink`): a "← Back to
+  admin dashboard" link, added to the top of all twelve `/admin/*`
+  subpages — none of them had a way back to `/admin` other than the
+  browser's back button.
+
+#### Fixed (security)
+
+- **`supabase/migrations/0017_protect_listing_delete.sql`**: found while
+  building the delete feature — `enforce_business_update_guard` didn't
+  protect `spa_businesses.deleted_at`, so any moderator (not just a
+  superadmin) could have soft-deleted a listing directly via the
+  Supabase client, bypassing the app's superadmin-only UI restriction.
+  Same family of bug as the appeals_insert (0011) and profile-status
+  (0014) fixes earlier this project — closed the same way, requiring
+  `is_superadmin()`.
+
 ### Bulk upload robustness + internal owner contact fields (2026-08-06)
 
 Follow-up after the first real bulk-upload attempt failed on every row.

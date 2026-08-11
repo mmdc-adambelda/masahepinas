@@ -1,6 +1,7 @@
 import { formatRelativeDate } from '@masahepinas/utils';
 import { requireRole } from '@/lib/auth';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { AdminBackLink } from '../back-link';
 import { ResolveForm } from './resolve-form';
 
 export const metadata = { title: 'Appeals' };
@@ -19,6 +20,7 @@ export default async function AdminAppealsPage() {
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
+      <AdminBackLink />
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold text-foreground">Appeals</h1>
         <p className="text-sm text-foreground-secondary">

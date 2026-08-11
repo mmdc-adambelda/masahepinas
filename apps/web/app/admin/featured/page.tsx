@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireSuperadmin } from '@/lib/auth';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { AdminBackLink } from '../back-link';
 import { AddFeaturedForm } from './add-form';
 import { RemoveButton } from './remove-button';
 
@@ -17,11 +18,12 @@ export default async function AdminFeaturedPage() {
 
   return (
     <main className="mx-auto max-w-3xl space-y-6 px-6 py-12">
+      <AdminBackLink />
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold text-foreground">Featured placements</h1>
         <p className="text-sm text-foreground-secondary">
-          Controls homepage/featured sections independently of Premium and
-          Recommended status.
+          Controls homepage/featured sections independently of Premium and Recommended
+          status.
         </p>
       </div>
 
@@ -32,7 +34,10 @@ export default async function AdminFeaturedPage() {
         {(placements ?? []).map((p: any) => (
           <div key={p.id} className="card flex items-center justify-between">
             <div>
-              <Link href={`/spa/${p.spa_businesses?.slug}`} className="font-medium text-foreground hover:underline">
+              <Link
+                href={`/spa/${p.spa_businesses?.slug}`}
+                className="font-medium text-foreground hover:underline"
+              >
                 {p.spa_businesses?.business_name ?? 'Unknown listing'}
               </Link>
               <p className="text-xs text-foreground-secondary">{p.placement_key}</p>
@@ -40,7 +45,9 @@ export default async function AdminFeaturedPage() {
             <RemoveButton placementId={p.id} />
           </div>
         ))}
-        {(placements ?? []).length === 0 ? <p className="text-foreground-secondary">No featured placements yet.</p> : null}
+        {(placements ?? []).length === 0 ? (
+          <p className="text-foreground-secondary">No featured placements yet.</p>
+        ) : null}
       </div>
     </main>
   );

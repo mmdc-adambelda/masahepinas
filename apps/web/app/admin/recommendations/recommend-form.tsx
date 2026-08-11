@@ -29,7 +29,11 @@ export function RecommendForm({
       )}
       {state.error ? <p className="text-xs text-danger">{state.error}</p> : null}
       <button type="submit" className="btn-secondary text-xs" disabled={isPending}>
-        {isPending ? 'Saving…' : isRecommended ? 'Remove recommendation' : 'Mark as Recommended'}
+        {isPending
+          ? 'Saving…'
+          : isRecommended
+            ? 'Remove recommendation'
+            : 'Mark as Recommended'}
       </button>
     </form>
   );

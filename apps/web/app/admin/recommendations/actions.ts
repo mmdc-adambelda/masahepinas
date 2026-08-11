@@ -37,7 +37,8 @@ export async function setRecommended(
       recommended_at: isRecommended ? new Date().toISOString() : null,
     })
     .eq('id', businessId);
-  if (updateError) return { error: 'Could not update recommendation status. Please try again.' };
+  if (updateError)
+    return { error: 'Could not update recommendation status. Please try again.' };
 
   await supabase.from('recommendation_records').insert({
     business_id: businessId,

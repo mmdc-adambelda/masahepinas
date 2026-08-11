@@ -1,4 +1,5 @@
 import { requireSuperadmin } from '@/lib/auth';
+import { AdminBackLink } from '../../back-link';
 import { AdminCreateSpaForm } from './admin-create-spa-form';
 
 export const metadata = { title: 'Add a spa listing (admin)' };
@@ -8,6 +9,7 @@ export default async function AdminNewSpaPage() {
 
   return (
     <main className="mx-auto max-w-2xl space-y-6 px-6 py-16">
+      <AdminBackLink />
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold text-foreground">Add a spa listing</h1>
         <p className="text-sm text-foreground-secondary">
