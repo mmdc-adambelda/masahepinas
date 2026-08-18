@@ -1,6 +1,7 @@
 export * from './enums';
 export * from './domain';
 export * from './business';
+export * from './blog';
 export * from './review';
 export * from './community';
 export * from './owner';

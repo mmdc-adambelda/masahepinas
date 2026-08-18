@@ -23,12 +23,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // pending_review businesses for an unauthenticated caller (see
   // spa_businesses_select in supabase/migrations/0003_spa_directory.sql),
   // so no extra status filter is needed here.
-  const { data: listings } = await supabase
-    .from('spa_businesses')
-    .select('slug, updated_at')
-    .eq('status', 'verified')
-    .order('updated_at', { ascending: false })
-    .limit(5000);
+  const [{ data: listings }, { data: posts }] = await Promise.all([
+    supabase
+      .from('spa_businesses')
+      .select('slug, updated_at')
+      .eq('status', 'verified')
+      .order('updated_at', { ascending: false })
+      .limit(5000),
+    // RLS already scopes this to published posts for an unauthenticated
+    // caller (see blog_posts_select in supabase/migrations/0019_blog_posts.sql).
+    supabase
+      .from('blog_posts')
+      .select('slug, updated_at')
+      .eq('status', 'published')
+      .order('updated_at', { ascending: false })
+      .limit(2000),
+  ]);
 
   const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.map((path) => ({
     url: `${siteUrl}${path}`,
@@ -43,5 +53,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticEntries, ...listingEntries];
+  const blogEntries: MetadataRoute.Sitemap = (posts ?? []).map((post) => ({
+    url: `${siteUrl}/blogs/${post.slug}`,
+    lastModified: post.updated_at ?? undefined,
+    changeFrequency: 'monthly',
+    priority: 0.6,
+  }));
+
+  return [...staticEntries, ...listingEntries, ...blogEntries];
 }

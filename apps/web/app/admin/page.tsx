@@ -85,6 +85,11 @@ export default async function AdminHomePage() {
           title="Bulk upload spa listings"
           description="Import many unclaimed listings at once from a CSV file."
         />
+        <AdminLink
+          href="/admin/blogs"
+          title="Blog posts"
+          description="Write, feature, and publish articles to the /blogs hub."
+        />
       </div>
     </main>
   );

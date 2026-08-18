@@ -866,6 +866,40 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['appeals']['Insert']>;
         Relationships: [];
       };
+      blog_posts: {
+        Row: {
+          id: string;
+          slug: string;
+          title: string;
+          excerpt: string | null;
+          content: string;
+          cover_image_path: string | null;
+          cover_image_alt: string | null;
+          is_featured: boolean;
+          status: 'draft' | 'published';
+          meta_description: string | null;
+          author_id: string | null;
+          published_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          title: string;
+          excerpt?: string | null;
+          content: string;
+          cover_image_path?: string | null;
+          cover_image_alt?: string | null;
+          is_featured?: boolean;
+          status?: 'draft' | 'published';
+          meta_description?: string | null;
+          author_id?: string | null;
+          published_at?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['blog_posts']['Insert']>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

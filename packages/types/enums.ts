@@ -36,6 +36,8 @@ export type ReportReason =
   | 'unrelated_to_business'
   | 'illegal_service_promotion';
 
+export type BlogPostStatus = 'draft' | 'published';
+
 export type ModerationActionType =
   | 'hide_content'
   | 'restore_content'

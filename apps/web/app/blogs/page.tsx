@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { APP_NAME } from '@masahepinas/config';
+import { listPublishedBlogPosts } from '@/lib/blog';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
@@ -27,8 +28,9 @@ interface GuideEntry {
   tag: string;
 }
 
-// Provincial/city spa guides go here as they're published. Only real,
-// published guides belong in this list — no placeholder/empty entries.
+// Hand-authored provincial/city SEO guides — static pages, not DB rows.
+// Staff-authored articles from the admin blog CMS (apps/web/app/admin/blogs)
+// are fetched separately below and rendered alongside these.
 const GUIDES: GuideEntry[] = [
   {
     href: '/blogs/cavite-spa',
@@ -39,7 +41,14 @@ const GUIDES: GuideEntry[] = [
   },
 ];
 
-export default function BlogsPage() {
+export default async function BlogsPage() {
+  const [featuredPosts, allPosts] = await Promise.all([
+    listPublishedBlogPosts({ featuredOnly: true, limit: 4 }),
+    listPublishedBlogPosts({ limit: 20 }),
+  ]);
+  const featuredIds = new Set(featuredPosts.map((post) => post.id));
+  const otherPosts = allPosts.filter((post) => !featuredIds.has(post.id));
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
@@ -121,22 +130,75 @@ export default function BlogsPage() {
         </div>
       </section>
 
-      <section className="card space-y-2">
-        <h2 className="text-lg font-semibold text-foreground">More guides coming soon</h2>
-        <p className="text-sm text-foreground-secondary">
-          We&apos;re building out spa and massage guides for more Philippine provinces and
-          cities, along with massage service explainers and consumer guides on how to
-          choose a trustworthy wellness business. In the meantime,{' '}
-          <Link href="/search" className="text-brand-accent hover:underline">
-            explore massage and spa businesses
-          </Link>{' '}
-          directly, or{' '}
-          <Link href="/sign-up/spa-owner" className="text-brand-accent hover:underline">
-            list your spa
-          </Link>{' '}
-          if you own one.
-        </p>
-      </section>
+      {featuredPosts.length > 0 ? (
+        <section aria-labelledby="featured-heading" className="space-y-4">
+          <h2 id="featured-heading" className="text-xl font-semibold text-foreground">
+            Featured articles
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {featuredPosts.map((post) => (
+              <BlogPostCard key={post.id} post={post} tag="Featured" />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {otherPosts.length > 0 ? (
+        <section aria-labelledby="latest-heading" className="space-y-4">
+          <h2 id="latest-heading" className="text-xl font-semibold text-foreground">
+            Latest from Masahe Pinas
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {otherPosts.map((post) => (
+              <BlogPostCard key={post.id} post={post} tag="Article" />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {featuredPosts.length === 0 && otherPosts.length === 0 ? (
+        <section className="card space-y-2">
+          <h2 className="text-lg font-semibold text-foreground">
+            More guides coming soon
+          </h2>
+          <p className="text-sm text-foreground-secondary">
+            We&apos;re building out spa and massage guides for more Philippine provinces
+            and cities, along with massage service explainers and consumer guides on how
+            to choose a trustworthy wellness business. In the meantime,{' '}
+            <Link href="/search" className="text-brand-accent hover:underline">
+              explore massage and spa businesses
+            </Link>{' '}
+            directly, or{' '}
+            <Link href="/sign-up/spa-owner" className="text-brand-accent hover:underline">
+              list your spa
+            </Link>{' '}
+            if you own one.
+          </p>
+        </section>
+      ) : null}
     </main>
+  );
+}
+
+function BlogPostCard({
+  post,
+  tag,
+}: {
+  post: { slug: string; title: string; excerpt: string | null };
+  tag: string;
+}) {
+  return (
+    <Link
+      href={`/blogs/${post.slug}`}
+      className="card flex flex-col gap-2 transition-colors hover:border-brand"
+    >
+      <span className="text-xs font-medium uppercase tracking-wide text-brand-accent">
+        {tag}
+      </span>
+      <h3 className="text-lg font-semibold text-foreground">{post.title}</h3>
+      {post.excerpt ? (
+        <p className="text-sm text-foreground-secondary">{post.excerpt}</p>
+      ) : null}
+    </Link>
   );
 }
