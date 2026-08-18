@@ -40,10 +40,19 @@ export default async function BlogPostPage({ params }: PageProps) {
   // so a null result covers both "doesn't exist" and "not published yet".
   if (!post) notFound();
 
-  const paragraphs = post.content
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
+  // Staff can write either HTML or plain text in the content field (see
+  // apps/web/app/admin/blogs/post-form.tsx). If it looks like it contains
+  // any HTML tags, render it as-is; otherwise treat blank lines as
+  // paragraph breaks. This content is staff-authored/staff-published
+  // only (blog_posts_write RLS), so it isn't sanitized before rendering —
+  // don't reuse this pattern for any user-submitted content.
+  const looksLikeHtml = /<[a-z][\s\S]*>/i.test(post.content);
+  const paragraphs = looksLikeHtml
+    ? []
+    : post.content
+        .split(/\n\s*\n/)
+        .map((p) => p.trim())
+        .filter(Boolean);
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -129,11 +138,20 @@ export default async function BlogPostPage({ params }: PageProps) {
         />
       ) : null}
 
-      <div className="space-y-4 text-foreground-secondary [&_p]:leading-relaxed">
-        {paragraphs.map((paragraph, i) => (
-          <p key={i}>{paragraph}</p>
-        ))}
-      </div>
+      {looksLikeHtml ? (
+        <div
+          className="space-y-4 text-foreground-secondary [&_a]:text-brand-accent [&_a:hover]:underline [&_h2]:pt-2 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_h3]:text-lg [&_h3]:font-medium [&_h3]:text-foreground [&_img]:w-full [&_img]:rounded-lg [&_li]:leading-relaxed [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:space-y-1.5 [&_ol]:pl-5"
+          // Staff-authored HTML, rendered as-is — see the comment above
+          // `looksLikeHtml` for why this is safe in this specific context.
+          dangerouslySetInnerHTML={{ __html: post.content }}
+        />
+      ) : (
+        <div className="space-y-4 text-foreground-secondary [&_p]:leading-relaxed">
+          {paragraphs.map((paragraph, i) => (
+            <p key={i}>{paragraph}</p>
+          ))}
+        </div>
+      )}
 
       <section className="card space-y-2">
         <p className="text-sm text-foreground-secondary">

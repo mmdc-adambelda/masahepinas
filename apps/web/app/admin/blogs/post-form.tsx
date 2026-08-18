@@ -8,11 +8,13 @@ import type { BlogPostActionResult } from './actions';
 const initialState: BlogPostActionResult = { error: null };
 
 /**
- * Shared create/edit form for a blog post's text fields. Cover image
- * upload is handled separately (see cover-image-manager.tsx) since it
- * only makes sense once a post row exists to attach the image to — so on
- * a successful *create*, this redirects straight to the new post's edit
- * page where the cover image uploader lives.
+ * Shared create/edit form for a blog post. On create, an optional cover
+ * image file can be picked right here (createBlogPost uploads it after
+ * the row exists). On edit, cover image changes go through the dedicated
+ * uploader (see cover-image-manager.tsx) instead — this form only shows
+ * the file input when there's no `post` yet. Either way, after a
+ * successful create this redirects to the new post's edit page so
+ * staff can keep working on it (add/replace the image, etc.).
  */
 export function PostForm({
   action,
@@ -85,12 +87,36 @@ export function PostForm({
           maxLength={20000}
           rows={16}
           className="input-field font-mono text-xs"
-          placeholder="Write the article body. Leave a blank line between paragraphs."
+          placeholder={
+            '<p>Write the article body here.</p>\n<p>HTML is supported — use <img>, <a>, <h2>, etc.</p>'
+          }
         />
         <p className="text-xs text-foreground-secondary">
-          Plain text — separate paragraphs with a blank line. No HTML needed.
+          HTML is supported (e.g. <code>&lt;p&gt;</code>, <code>&lt;h2&gt;</code>,{' '}
+          <code>&lt;img&gt;</code>, <code>&lt;a&gt;</code>) — if your content includes any
+          HTML tags, it&apos;s rendered as-is on the published page (only staff can
+          publish, so this isn&apos;t sanitized). Otherwise, plain text with a blank line
+          between paragraphs works too.
         </p>
       </div>
+
+      {!post ? (
+        <div className="space-y-1.5">
+          <label htmlFor="file" className="text-sm text-foreground-secondary">
+            Cover image <span className="text-foreground-secondary">(optional)</span>
+          </label>
+          <input
+            id="file"
+            name="file"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="input-field"
+          />
+          <p className="text-xs text-foreground-secondary">
+            JPEG, PNG, or WEBP. You can add or replace it later from the edit page too.
+          </p>
+        </div>
+      ) : null}
 
       <div className="space-y-1.5">
         <label htmlFor="metaDescription" className="text-sm text-foreground-secondary">

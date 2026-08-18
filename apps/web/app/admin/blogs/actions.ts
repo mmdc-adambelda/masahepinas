@@ -51,6 +51,46 @@ function parseFormFields(formData: FormData) {
   });
 }
 
+type SupabaseClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+
+/** Validates + uploads a cover image file to the blog-images bucket for
+ * `postId`, returning the new storage path. Shared by `createBlogPost`
+ * (image picked at creation time) and `uploadCoverImage` (image added/
+ * replaced later from the edit page). */
+async function uploadBlogImageFile(
+  supabase: SupabaseClient,
+  postId: string,
+  file: File,
+): Promise<{ storagePath: string } | { error: string }> {
+  if (file.size > IMAGE_LIMITS.maxFileSizeBytes) {
+    return {
+      error: `Image must be under ${IMAGE_LIMITS.maxFileSizeBytes / (1024 * 1024)} MB.`,
+    };
+  }
+
+  const buffer = new Uint8Array(await file.arrayBuffer());
+  const detectedType = detectImageType(buffer);
+  if (
+    !detectedType ||
+    !IMAGE_LIMITS.allowedMimeTypes.includes(
+      detectedType as (typeof IMAGE_LIMITS.allowedMimeTypes)[number],
+    )
+  ) {
+    return { error: 'That file is not a valid JPEG, PNG, or WEBP image.' };
+  }
+
+  const extension =
+    detectedType.split('/')[1] === 'jpeg' ? 'jpg' : detectedType.split('/')[1];
+  const storagePath = `${postId}/${randomUUID()}.${extension}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('blog-images')
+    .upload(storagePath, buffer, { contentType: detectedType, upsert: false });
+  if (uploadError) return { error: 'Upload failed. Please try again.' };
+
+  return { storagePath };
+}
+
 /** Staff (moderator or superadmin) can author, edit, publish, and delete
  * blog posts — same staff-inclusive model used for business photo
  * management. See blog_posts_write in supabase/migrations/0019_blog_posts.sql. */
@@ -99,6 +139,30 @@ export async function createBlogPost(
     .single();
 
   if (error || !created) return { error: 'Could not create the post. Please try again.' };
+
+  // A cover image is optional at creation time — the "New post" form
+  // includes the same file input as the edit page's cover image
+  // manager, so staff don't have to save first and hunt for the
+  // uploader afterward.
+  const file = formData.get('file');
+  if (file instanceof File && file.size > 0) {
+    const result = await uploadBlogImageFile(supabase, created.id, file);
+    if ('error' in result) {
+      // The post itself was created successfully; only the image failed.
+      // Surface that distinctly rather than pretending creation failed.
+      revalidatePath('/admin/blogs');
+      revalidatePath('/blogs');
+      return {
+        error: `Post saved, but the cover image failed: ${result.error}`,
+        slug: created.slug,
+        id: created.id,
+      };
+    }
+    await supabase
+      .from('blog_posts')
+      .update({ cover_image_path: result.storagePath })
+      .eq('id', created.id);
+  }
 
   revalidatePath('/admin/blogs');
   revalidatePath('/blogs');
@@ -185,23 +249,7 @@ export async function uploadCoverImage(
   const supabase = await createSupabaseServerClient();
 
   const file = formData.get('file');
-  if (!(file instanceof File)) return { error: 'No file selected.' };
-  if (file.size > IMAGE_LIMITS.maxFileSizeBytes) {
-    return {
-      error: `Image must be under ${IMAGE_LIMITS.maxFileSizeBytes / (1024 * 1024)} MB.`,
-    };
-  }
-
-  const buffer = new Uint8Array(await file.arrayBuffer());
-  const detectedType = detectImageType(buffer);
-  if (
-    !detectedType ||
-    !IMAGE_LIMITS.allowedMimeTypes.includes(
-      detectedType as (typeof IMAGE_LIMITS.allowedMimeTypes)[number],
-    )
-  ) {
-    return { error: 'That file is not a valid JPEG, PNG, or WEBP image.' };
-  }
+  if (!(file instanceof File) || file.size === 0) return { error: 'No file selected.' };
 
   const { data: post } = await supabase
     .from('blog_posts')
@@ -210,21 +258,15 @@ export async function uploadCoverImage(
     .maybeSingle();
   if (!post) return { error: 'Post not found.' };
 
-  const extension =
-    detectedType.split('/')[1] === 'jpeg' ? 'jpg' : detectedType.split('/')[1];
-  const storagePath = `${postId}/${randomUUID()}.${extension}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from('blog-images')
-    .upload(storagePath, buffer, { contentType: detectedType, upsert: false });
-  if (uploadError) return { error: 'Upload failed. Please try again.' };
+  const result = await uploadBlogImageFile(supabase, postId, file);
+  if ('error' in result) return { error: result.error };
 
   const { error: updateError } = await supabase
     .from('blog_posts')
-    .update({ cover_image_path: storagePath })
+    .update({ cover_image_path: result.storagePath })
     .eq('id', postId);
   if (updateError) {
-    await supabase.storage.from('blog-images').remove([storagePath]);
+    await supabase.storage.from('blog-images').remove([result.storagePath]);
     return { error: 'Could not save the cover image. Please try again.' };
   }
 
