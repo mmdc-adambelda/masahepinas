@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { businessDetailsSchema, locationSchema } from '@masahepinas/validation';
-import { requireSuperadmin } from '@/lib/auth';
+import { requireRole } from '@/lib/auth';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export interface AdminEditResult {
@@ -25,18 +25,22 @@ function parseOptionalCoordinate(
 }
 
 /**
- * Superadmin-only edit for any existing listing — mainly here so bad
- * data from a bulk CSV import (or anywhere else) can be fixed without a
- * database console. Deliberately does not touch `status` (that's the
- * moderation action on /admin/listings, logged with a reason) or
- * `owner_id`/claim state.
+ * Staff (moderator or superadmin) edit for any existing listing —
+ * mainly here so bad data from a bulk CSV import (or anywhere else) can
+ * be fixed without a database console. Deliberately does not touch
+ * `status` (that's the moderation action on /admin/listings, logged
+ * with a reason) or `owner_id`/claim state — those stay behind their
+ * own guarded flows. RLS (spa_businesses_update in
+ * supabase/migrations/0003_spa_directory.sql) already grants any staff
+ * session write access to these fields, so this matches the real
+ * security boundary rather than being stricter than it.
  */
 export async function updateSpaListing(
   businessId: string,
   _prevState: AdminEditResult,
   formData: FormData,
 ): Promise<AdminEditResult> {
-  await requireSuperadmin();
+  await requireRole('moderator');
   const supabase = await createSupabaseServerClient();
 
   const detailsParsed = businessDetailsSchema.safeParse({

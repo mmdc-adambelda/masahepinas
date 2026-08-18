@@ -111,7 +111,7 @@ export default async function AdminListingsPage({
                     href={`/admin/spas/${listing.id}/edit`}
                     className="text-brand-accent hover:underline"
                   >
-                    {isSuperadmin ? 'Edit' : 'Logo/photos'}
+                    Edit
                   </Link>
                   {listing.verificationDocumentUrl ? (
                     <a

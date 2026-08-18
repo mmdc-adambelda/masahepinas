@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation';
-import { hasRole } from '@masahepinas/types';
 import { requireRole } from '@/lib/auth';
 import { getListingForEdit } from '@/lib/admin';
 import { getBusinessImages } from '@/lib/spa-businesses';
@@ -14,14 +13,13 @@ export default async function AdminEditSpaPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  // Staff-gated (moderator or superadmin) so any admin can manage a
-  // business's logo/banner photos here. The business-detail edit form
-  // below stays superadmin-only — `updateSpaListing`
-  // (apps/web/app/admin/spas/[id]/edit/actions.ts) independently enforces
-  // that with its own `requireSuperadmin()` call, so this page-level
-  // check is just about what's shown, not the real security boundary.
-  const session = await requireRole('moderator');
-  const isSuperadmin = hasRole(session, 'superadmin');
+  // Staff-gated (moderator or superadmin) — any admin can manage a
+  // business's logo/banner photos and business details here.
+  // `updateSpaListing` (apps/web/app/admin/spas/[id]/edit/actions.ts)
+  // independently enforces the same staff-level check, matching what
+  // RLS already permits (spa_businesses_update in
+  // supabase/migrations/0003_spa_directory.sql).
+  await requireRole('moderator');
   const { id } = await params;
   const [listing, images] = await Promise.all([
     getListingForEdit(id),
@@ -56,13 +54,10 @@ export default async function AdminEditSpaPage({
         <ImageManager businessId={id} images={images} />
       </section>
 
-      {isSuperadmin ? (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-foreground">Business details</h2>
-          <p className="text-sm text-foreground-secondary">Superadmin-only.</p>
-          <EditSpaForm listing={listing} />
-        </section>
-      ) : null}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-foreground">Business details</h2>
+        <EditSpaForm listing={listing} />
+      </section>
     </main>
   );
 }
