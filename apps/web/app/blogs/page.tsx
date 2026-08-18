@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { APP_NAME } from '@masahepinas/config';
 import { listPublishedBlogPosts } from '@/lib/blog';
+import { ArticleCard } from '@/components/ArticleCard';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
@@ -115,17 +116,13 @@ export default async function BlogsPage() {
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {GUIDES.map((guide) => (
-            <Link
+            <ArticleCard
               key={guide.href}
               href={guide.href}
-              className="card flex flex-col gap-2 transition-colors hover:border-brand"
-            >
-              <span className="text-xs font-medium uppercase tracking-wide text-brand-accent">
-                {guide.tag}
-              </span>
-              <h3 className="text-lg font-semibold text-foreground">{guide.title}</h3>
-              <p className="text-sm text-foreground-secondary">{guide.description}</p>
-            </Link>
+              title={guide.title}
+              description={guide.description}
+              tag={guide.tag}
+            />
           ))}
         </div>
       </section>
@@ -137,7 +134,13 @@ export default async function BlogsPage() {
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {featuredPosts.map((post) => (
-              <BlogPostCard key={post.id} post={post} tag="Featured" />
+              <ArticleCard
+                key={post.id}
+                href={`/blogs/${post.slug}`}
+                title={post.title}
+                description={post.excerpt}
+                tag="Featured"
+              />
             ))}
           </div>
         </section>
@@ -150,7 +153,13 @@ export default async function BlogsPage() {
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {otherPosts.map((post) => (
-              <BlogPostCard key={post.id} post={post} tag="Article" />
+              <ArticleCard
+                key={post.id}
+                href={`/blogs/${post.slug}`}
+                title={post.title}
+                description={post.excerpt}
+                tag="Article"
+              />
             ))}
           </div>
         </section>
@@ -177,28 +186,5 @@ export default async function BlogsPage() {
         </section>
       ) : null}
     </main>
-  );
-}
-
-function BlogPostCard({
-  post,
-  tag,
-}: {
-  post: { slug: string; title: string; excerpt: string | null };
-  tag: string;
-}) {
-  return (
-    <Link
-      href={`/blogs/${post.slug}`}
-      className="card flex flex-col gap-2 transition-colors hover:border-brand"
-    >
-      <span className="text-xs font-medium uppercase tracking-wide text-brand-accent">
-        {tag}
-      </span>
-      <h3 className="text-lg font-semibold text-foreground">{post.title}</h3>
-      {post.excerpt ? (
-        <p className="text-sm text-foreground-secondary">{post.excerpt}</p>
-      ) : null}
-    </Link>
   );
 }

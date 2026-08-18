@@ -12,6 +12,14 @@ export function blogCoverImageUrl(storagePath: string): string {
   return `${BLOG_IMAGE_PUBLIC_URL_PREFIX}${storagePath}`;
 }
 
+/** Rough "N min read" estimate from word count at 200 wpm — strips HTML
+ * tags first so a post authored in HTML doesn't count markup as words. */
+export function estimateReadingMinutes(content: string): number {
+  const text = content.replace(/<[^>]+>/g, ' ');
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(wordCount / 200));
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRow(row: any): BlogPost {
   return {
