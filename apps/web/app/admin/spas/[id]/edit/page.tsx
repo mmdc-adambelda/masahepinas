@@ -1,6 +1,9 @@
 import { notFound } from 'next/navigation';
-import { requireSuperadmin } from '@/lib/auth';
+import { hasRole } from '@masahepinas/types';
+import { requireRole } from '@/lib/auth';
 import { getListingForEdit } from '@/lib/admin';
+import { getBusinessImages } from '@/lib/spa-businesses';
+import { ImageManager } from '@/components/ImageManager';
 import { AdminBackLink } from '../../../back-link';
 import { EditSpaForm } from './edit-spa-form';
 
@@ -11,28 +14,55 @@ export default async function AdminEditSpaPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireSuperadmin();
+  // Staff-gated (moderator or superadmin) so any admin can manage a
+  // business's logo/banner photos here. The business-detail edit form
+  // below stays superadmin-only — `updateSpaListing`
+  // (apps/web/app/admin/spas/[id]/edit/actions.ts) independently enforces
+  // that with its own `requireSuperadmin()` call, so this page-level
+  // check is just about what's shown, not the real security boundary.
+  const session = await requireRole('moderator');
+  const isSuperadmin = hasRole(session, 'superadmin');
   const { id } = await params;
-  const listing = await getListingForEdit(id);
+  const [listing, images] = await Promise.all([
+    getListingForEdit(id),
+    getBusinessImages(id),
+  ]);
   if (!listing) notFound();
 
   return (
-    <main className="mx-auto max-w-2xl space-y-6 px-6 py-16">
+    <main className="mx-auto max-w-2xl space-y-10 px-6 py-16">
       <AdminBackLink />
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold text-foreground">
           Edit {listing.businessName}
         </h1>
         <p className="text-sm text-foreground-secondary">
-          Superadmin-only. Status changes (verify/reject/suspend/archive/delete) happen
-          from{' '}
+          Status changes (verify/reject/suspend/archive/delete) happen from{' '}
           <a href="/admin/listings" className="text-brand-accent hover:underline">
             the listing verification page
           </a>
           , not here.
         </p>
       </div>
-      <EditSpaForm listing={listing} />
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-foreground">
+          Logo, banner &amp; photos
+        </h2>
+        <p className="text-sm text-foreground-secondary">
+          Upload a logo or banner on behalf of this business owner. The photo marked
+          &quot;Logo / banner&quot; is shown on the business&apos;s public listing.
+        </p>
+        <ImageManager businessId={id} images={images} />
+      </section>
+
+      {isSuperadmin ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold text-foreground">Business details</h2>
+          <p className="text-sm text-foreground-secondary">Superadmin-only.</p>
+          <EditSpaForm listing={listing} />
+        </section>
+      ) : null}
     </main>
   );
 }

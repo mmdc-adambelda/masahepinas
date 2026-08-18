@@ -38,6 +38,25 @@ function detectImageType(bytes: Uint8Array): string | null {
   return null;
 }
 
+/**
+ * Shared image-upload actions for a business's logo/banner photos. Used by
+ * both the spa owner's own listing editor (apps/web/app/submit-a-spa) and
+ * the staff admin listing editor (apps/web/app/admin/spas/[id]/edit) — a
+ * business's owner and staff (moderator/superadmin) can both manage its
+ * photos, per `business_images_write` RLS (supabase/migrations/0003_spa_directory.sql)
+ * and the matching storage.objects policies, which already check
+ * `owns_business(...) or is_staff(auth.uid())`.
+ *
+ * `requireRole('spa_owner')` below looks owner-only at a glance, but
+ * `requireRole` falls back to allowing any staff session too (see
+ * apps/web/lib/auth.ts) — so this already covers moderators/superadmins
+ * acting on someone else's business.
+ */
+function revalidateImagePaths(businessId: string) {
+  revalidatePath('/submit-a-spa');
+  revalidatePath(`/admin/spas/${businessId}/edit`);
+}
+
 export async function uploadBusinessImage(
   businessId: string,
   _prevState: ImageActionResult,
@@ -84,7 +103,7 @@ export async function uploadBusinessImage(
     .upload(storagePath, buffer, { contentType: detectedType, upsert: false });
   if (uploadError) return { error: 'Upload failed. Please try again.' };
 
-  const isPrimary = (count ?? 0) === 0; // first image becomes the primary/logo by default
+  const isPrimary = (count ?? 0) === 0; // first image becomes the primary logo/banner by default
   const { error: insertError } = await supabase.from('business_images').insert({
     business_id: businessId,
     storage_path: storagePath,
@@ -99,7 +118,7 @@ export async function uploadBusinessImage(
     return { error: 'Could not save the image. Please try again.' };
   }
 
-  revalidatePath('/submit-a-spa');
+  revalidateImagePaths(businessId);
   return { error: null };
 }
 
@@ -119,7 +138,7 @@ export async function deleteBusinessImage(
   if (deleteError) return { error: 'Could not remove the image.' };
 
   await supabase.storage.from('business-images').remove([storagePath]);
-  revalidatePath('/submit-a-spa');
+  revalidateImagePaths(businessId);
   return { error: null };
 }
 
@@ -141,6 +160,6 @@ export async function setPrimaryImage(
     .eq('business_id', businessId);
   if (error) return { error: 'Could not update the primary image.' };
 
-  revalidatePath('/submit-a-spa');
+  revalidateImagePaths(businessId);
   return { error: null };
 }

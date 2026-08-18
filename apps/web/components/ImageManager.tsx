@@ -8,10 +8,18 @@ import {
   setPrimaryImage,
   uploadBusinessImage,
   type ImageActionResult,
-} from './image-actions';
+} from '@/lib/business-image-actions';
 
 const initialState: ImageActionResult = { error: null };
+const maxSizeMb = IMAGE_LIMITS.maxFileSizeBytes / (1024 * 1024);
 
+/**
+ * Business photo manager — shared by the spa owner's own listing editor
+ * (apps/web/app/submit-a-spa) and the staff admin listing editor
+ * (apps/web/app/admin/spas/[id]/edit/page.tsx). The first/primary photo
+ * doubles as the business's logo/banner shown on its public listing card
+ * and detail page.
+ */
 export function ImageManager({
   businessId,
   images,
@@ -38,14 +46,14 @@ export function ImageManager({
               />
               <div className="flex items-center justify-between text-xs">
                 {image.isPrimary ? (
-                  <span className="text-brand-accent">Primary</span>
+                  <span className="text-brand-accent">Logo / banner</span>
                 ) : (
                   <button
                     type="button"
                     className="text-foreground-secondary hover:text-foreground"
                     onClick={() => setPrimaryImage(businessId, image.id)}
                   >
-                    Set primary
+                    Set as logo/banner
                   </button>
                 )}
                 <button
@@ -74,7 +82,7 @@ export function ImageManager({
         >
           <div className="space-y-1.5">
             <label htmlFor="file" className="text-sm text-foreground-secondary">
-              Add a photo
+              Upload a logo, banner, or business photo
             </label>
             <input
               id="file"
@@ -84,6 +92,11 @@ export function ImageManager({
               required
               className="input-field"
             />
+            <p className="text-xs text-foreground-secondary">
+              JPEG, PNG, or WEBP, up to {maxSizeMb} MB. The first photo becomes the
+              business&apos;s logo/banner shown on its listing — you can change which one
+              is primary at any time.
+            </p>
           </div>
           <div className="space-y-1.5">
             <label htmlFor="altText" className="text-sm text-foreground-secondary">

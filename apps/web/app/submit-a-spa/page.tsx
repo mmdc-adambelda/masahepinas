@@ -4,7 +4,7 @@ import { requireRole } from '@/lib/auth';
 import { getMyBusiness, listServiceCategories } from '@/lib/spa-businesses';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { SubmitSpaForm } from './submit-spa-form';
-import { ImageManager } from './image-manager';
+import { ImageManager } from '@/components/ImageManager';
 import { VerificationForm } from './verification-form';
 
 export const metadata = { title: 'Complete your spa listing' };

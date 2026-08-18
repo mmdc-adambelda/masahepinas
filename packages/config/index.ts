@@ -16,7 +16,7 @@ export const PREMIUM_PLAN = {
 
 export const IMAGE_LIMITS = {
   maxImagesPerListing: 3,
-  maxFileSizeBytes: 5 * 1024 * 1024, // 5 MB
+  maxFileSizeBytes: 2 * 1024 * 1024, // 2 MB
   allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'] as const,
 };
 

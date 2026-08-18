@@ -107,14 +107,12 @@ export default async function AdminListingsPage({
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-3 text-xs">
-                  {isSuperadmin ? (
-                    <Link
-                      href={`/admin/spas/${listing.id}/edit`}
-                      className="text-brand-accent hover:underline"
-                    >
-                      Edit
-                    </Link>
-                  ) : null}
+                  <Link
+                    href={`/admin/spas/${listing.id}/edit`}
+                    className="text-brand-accent hover:underline"
+                  >
+                    {isSuperadmin ? 'Edit' : 'Logo/photos'}
+                  </Link>
                   {listing.verificationDocumentUrl ? (
                     <a
                       href={listing.verificationDocumentUrl}

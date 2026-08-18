@@ -222,6 +222,30 @@ export async function getMyBusiness(
   return getListingBySlug(business.slug);
 }
 
+/** Fetches just a business's photos by id — used by the staff admin
+ * listing editor, which (unlike `getMyBusiness`) needs to look up any
+ * business, not just the signed-in owner's own one. RLS already lets
+ * staff select any business's images (see business_images_select in
+ * supabase/migrations/0003_spa_directory.sql). */
+export async function getBusinessImages(businessId: string): Promise<BusinessImage[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data: images } = await supabase
+    .from('business_images')
+    .select('*')
+    .eq('business_id', businessId)
+    .order('position');
+
+  return (images ?? []).map((img): BusinessImage => ({
+    id: img.id,
+    storagePath: img.storage_path,
+    publicUrl: businessImagePublicUrl(img.storage_path),
+    caption: img.caption,
+    altText: img.alt_text,
+    isPrimary: img.is_primary,
+    position: img.position,
+  }));
+}
+
 export async function listServiceCategories(): Promise<ServiceCategory[]> {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase

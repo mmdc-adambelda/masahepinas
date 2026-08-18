@@ -65,7 +65,7 @@ reason required) → may move to `suspended` (policy violation) → `archived`
 Edits to a **verified** listing's core trust fields (business name, address,
 verification documents) route through the listing change approval queue
 before going live; cosmetic edits (description wording, hours tweak, photo
-swap within the 3-image/5MB limits) publish immediately but remain subject to
+swap within the 3-image/2MB limits) publish immediately but remain subject to
 retroactive report-driven review.
 
 ## 6. Business Claim Workflow

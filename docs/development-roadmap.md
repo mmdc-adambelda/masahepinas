@@ -52,7 +52,7 @@ saved businesses.
 `/spas/[province]/[city]`, `/services/[service]`), an owner can submit a
 listing (`/sign-up/spa-owner` → `/submit-a-spa`), a superadmin can add a
 listing (`/admin/spas/new`), map coordinates are saved correctly (PostGIS
-`geom` generated column + lat/lng columns), 3-image/5MB limits enforced
+`geom` generated column + lat/lng columns), 3-image/2MB limits enforced
 both client-side and server-side (server sniffs actual file bytes, not just
 the declared MIME type), location/gender/price/verified/recommended filters
 work via a server-side `search_spa_businesses` RPC, listing pages are
